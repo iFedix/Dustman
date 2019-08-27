@@ -1,0 +1,22 @@
+; This Add-on is not created by, affiliated with or sponsored by ZeniMax
+; Media Inc. or its affiliates. The Elder Scrolls® and related logos are
+; registered trademarks or trademarks of ZeniMax Media Inc. in the United
+; States and/or other countries. All rights reserved.
+; You can read the full terms at https://account.elderscrollsonline.com/add-on-terms
+
+## Title: |cEFEBBEDustman|r
+## Version: 9.7.2
+## Author: Ayantir, Garkin & iFedix
+## Description: Automates management of unwanted items
+## APIVersion: 100028
+## SavedVariables: Dustman_SavedVariables Dustman_GlobalSavedVariables Dustman_Junk_SavedVariables Dustman_Junk_GlobalSavedVariables
+## DependsOn: LibAddonMenu-2.0 LibResearch
+
+Language/strings.lua
+Language/$(language).lua
+
+Dustman.lua
+DustmanData.lua
+DustmanMenu.lua
+
+bindings.xml

@@ -1,0 +1,26 @@
+<Bindings>
+	<Layer name="SI_KEYBINDINGS_LAYER_GENERAL">
+		<Category name="Dustman">
+			<Action name="DUSTMAN_JUNK">
+				<Down>Dustman_JunkHoveredItem()</Down>
+			</Action>
+			<Action name="DUSTMAN_SET">
+				<Down>Dustman_ExcludeSetItems()</Down>
+			</Action>
+			<Action name="DUSTMAN_DESTROY">
+				<Down>Dustman_DestroyHoveredItem()</Down>
+			</Action>
+			<Action name="DUSTMAN_RESCAN">
+				<Down>Dustman_RescanInventory()</Down>
+			</Action>
+		</Category>
+	</Layer>
+	<Layer name="GamepadUIMode" allowFallthrough="false">
+		<Category>
+			<AllowAction name="DUSTMAN_JUNK"/>
+			<AllowAction name="DUSTMAN_SET"/>
+			<AllowAction name="DUSTMAN_DESTROY"/>
+			<AllowAction name="DUSTMAN_RESCAN"/>
+		</Category>
+	</Layer>
+</Bindings>
