@@ -1,6 +1,6 @@
 --[[
 -------------------------------------------------------------------------------
--- Dustman, by Ayantir
+-- Dustman, by Ayantir & iFedix
 -------------------------------------------------------------------------------
 This software is under : CreativeCommons CC BY-NC-SA 4.0
 Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
@@ -26,8 +26,9 @@ http://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
 if not Dustman then return end
 
-local ADDON_VERSION = "9.7.2"
+local ADDON_VERSION = "10.8"
 local ADDON_WEBSITE = "http://www.esoui.com/downloads/info97-Dustman.html"
+local ADDON_DONATIONS = "https://www.esoui.com/downloads/fileinfo.php?id=97#donate"
 
 local function GetSettings()
 	if Dustman.savedVars.useGlobalSettings then
@@ -37,6 +38,16 @@ local function GetSettings()
 	end
 end
 Dustman.GetSettings = GetSettings
+
+local function getBoT(value)
+	if value==1 then 
+		return GetString(SI_DIALOG_NO)
+	elseif value==2 then 
+		return GetString(DUSTMAN_BOT_DD_ALL)
+	elseif value==3 then
+		return GetString(DUSTMAN_BOT_DD_ACTIVE)
+	end
+end
 
 --addon menu
 function Dustman.CreateSettingsMenu(defaults)
@@ -49,6 +60,15 @@ function Dustman.CreateSettingsMenu(defaults)
 		local qualName = color:Colorize(GetString("SI_ITEMQUALITY", i))
 		qualityChoices[i] = qualName
 		reverseQualityChoices[qualName] = i
+	end
+	
+	local jewMasterWritsQualityChoices = {}
+	local jewMasterWritsReverseQualityChoices = {}
+	for i = 0, ITEM_QUALITY_LEGENDARY do
+		local color = GetItemQualityColor(i)
+		local qualName = color:Colorize(GetString("SI_ITEMQUALITY", i))
+		jewMasterWritsQualityChoices[i] = qualName
+		jewMasterWritsReverseQualityChoices[qualName] = i
 	end
 	
 	local function GetIdFromName(choice)
@@ -164,14 +184,15 @@ function Dustman.CreateSettingsMenu(defaults)
 	local LAM2 = LibAddonMenu2
 	local panelData = {
 		type = "panel",
-		name = GetString(DUSTMAN_TITLE),
-		displayName = ZO_HIGHLIGHT_TEXT:Colorize(GetString(DUSTMAN_TITLE)),
+		name = "Dustman",
+		displayName = zo_strformat("|c8B0000DUST|r|cE94A2FMAN|r"),
 		author = "Garkin, Ayantir & iFedix",
 		version = ADDON_VERSION,
 		slashCommand = "/dustman",
 		registerForRefresh = true,
 		registerForDefaults = true,
 		website = ADDON_WEBSITE,
+		donation = ADDON_DONATIONS,
 	}
 	LAM2:RegisterAddonPanel("Dustman_OptionsPanel", panelData)
 
@@ -193,7 +214,7 @@ function Dustman.CreateSettingsMenu(defaults)
 		getFunc = function() return GetSettings().junkTraitSets end,
 		setFunc = function(state) GetSettings().junkTraitSets = state end,
 		default = defaults.junkTraitSets,
-		disabled = function() return not GetSettings().equipment.enabled end,
+		disabled = function() return not GetSettings().equipment.wa.enabled and not GetSettings().equipment.j.enabled  end,
 	})
 	
 	for traitItemIndex = 1, GetNumSmithingTraitItems() do
@@ -210,15 +231,27 @@ function Dustman.CreateSettingsMenu(defaults)
 				setFunc = function(state) GetSettings().traitMaterial[itemId] = state end,
 				default = defaults.traitMaterial[itemId],
 			})
-			table.insert(itemsTraitsSubmenuControls, {
-				type = "checkbox",
-				name = GetString("SI_ITEMTRAITTYPE", traitType),
-				tooltip = zo_strformat("<<1>>: <<2>>", GetString("SI_ITEMTYPE", itemType), GetString("SI_ITEMTRAITTYPE", traitType)),
-				getFunc = function() return GetSettings().itemTraits[traitType] end,
-				setFunc = function(state) GetSettings().itemTraits[traitType] = state end,
-				default = defaults.itemTraits[traitType],
-				disabled = function() return not GetSettings().equipment.enabled end,
-			})
+			if itemType == ITEMTYPE_ARMOR_TRAIT or itemType == ITEMTYPE_WEAPON_TRAIT then
+				table.insert(itemsTraitsSubmenuControls, {
+					type = "checkbox",
+					name = GetString("SI_ITEMTRAITTYPE", traitType),
+					tooltip = zo_strformat("<<1>>: <<2>>", GetString("SI_ITEMTYPE", itemType), GetString("SI_ITEMTRAITTYPE", traitType)),
+					getFunc = function() return GetSettings().itemTraits[traitType] end,
+					setFunc = function(state) GetSettings().itemTraits[traitType] = state end,
+					default = defaults.itemTraits[traitType],
+					disabled = function() return not GetSettings().equipment.wa.enabled end,
+				})
+			else
+				table.insert(itemsTraitsSubmenuControls, {
+					type = "checkbox",
+					name = GetString("SI_ITEMTRAITTYPE", traitType),
+					tooltip = zo_strformat("<<1>>: <<2>>", GetString("SI_ITEMTYPE", itemType), GetString("SI_ITEMTRAITTYPE", traitType)),
+					getFunc = function() return GetSettings().itemTraits[traitType] end,
+					setFunc = function(state) GetSettings().itemTraits[traitType] = state end,
+					default = defaults.itemTraits[traitType],
+					disabled = function() return not GetSettings().equipment.j.enabled end,
+				})
+			end
 		end
 	end
 	
@@ -250,19 +283,147 @@ function Dustman.CreateSettingsMenu(defaults)
 		default = defaults.styleFullStack,
 	})
 	
+	local enchantingSubmenuControls = {}
+	table.insert(enchantingSubmenuControls, {
+		type = "checkbox",
+		name = GetString(DUSTMAN_GLYPHS),
+		tooltip = GetString(DUSTMAN_GLYPHS_DESC),
+		getFunc = function() return GetSettings().glyphs end,
+		setFunc = function(state) GetSettings().glyphs = state end,
+		default = defaults.glyphs,
+	})
+    table.insert(enchantingSubmenuControls, {
+		type = "dropdown",
+		name = GetString(DUSTMAN_QUALITY),
+		tooltip = GetString(DUSTMAN_QUALITY_DESC),
+		choices = qualityChoices,
+		getFunc = function() return qualityChoices[GetSettings().glyphsQuality] end,
+		setFunc = function(choice) GetSettings().glyphsQuality = reverseQualityChoices[choice] end,
+		disabled = function() return not GetSettings().glyphs end,
+		default = qualityChoices[defaults.glyphsQuality],
+	})
+	table.insert(enchantingSubmenuControls, {
+		type = "dropdown",
+		name = GetString(DUSTMAN_LEVELGLYPH),
+		tooltip = GetString(DUSTMAN_LEVELGLYPH_DESC),
+		choices = levelGlyphChoices,
+		getFunc = function() return levelGlyphChoices[valueLevelGlyphChoice[GetSettings().keepLevelGlyphs]] end,
+		setFunc = function(choice)
+			if reverseLevelGlyphChoices[choice] then
+				GetSettings().keepLevelGlyphs = reverseLevelGlyphChoices[choice]
+			else
+				GetSettings().keepLevelGlyphs = defaults.keepLevelGlyphs
+			end
+		end,
+		disabled = function() return not GetSettings().glyphs end,
+		default = levelGlyphChoices[defaults.keepLevelGlyphs],
+	})
+    table.insert(enchantingSubmenuControls, {
+		type = "divider",
+    })
+	table.insert(enchantingSubmenuControls, {
+		type = "checkbox",
+		name = GetString(DUSTMAN_ASPECT_RUNES),
+		tooltip = GetString(DUSTMAN_ASPECT_RUNES_DESC),
+		getFunc = function() return GetSettings().enchanting.enchantingAspect end,
+		setFunc = function(state) GetSettings().enchanting.enchantingAspect = state end,
+		default = defaults.enchanting.enchantingAspect,
+	})
+	table.insert(enchantingSubmenuControls, {
+		type = "dropdown",
+		name = GetString(DUSTMAN_QUALITY),
+		tooltip = GetString(DUSTMAN_QUALITY_DESC),
+		choices = qualityChoices,
+		getFunc = function() return qualityChoices[GetSettings().enchanting.aspectQuality] end,
+		setFunc = function(choice) GetSettings().enchanting.aspectQuality = reverseQualityChoices[choice] end,
+		disabled = function() return not GetSettings().enchanting.enchantingAspect end,
+		default = qualityChoices[defaults.enchanting.aspectQuality],
+	})
+	table.insert(enchantingSubmenuControls, {
+		type = "checkbox",
+		name = GetString(DUSTMAN_FULLSTACK), 
+		tooltip = GetString(DUSTMAN_FULLSTACK_DESC),
+		getFunc = function() return GetSettings().enchanting.aspectFullStack end,
+		setFunc = function(state) GetSettings().enchanting.aspectFullStack = state end,
+		disabled = function() return not GetSettings().enchanting.enchantingAspect end,
+		default = defaults.enchanting.aspectFullStack,
+	})
+	table.insert(enchantingSubmenuControls, {
+		type = "divider",
+    })
+	table.insert(enchantingSubmenuControls, {
+		type = "checkbox",
+		name = GetString(DUSTMAN_ESSENCE_RUNES), 
+		tooltip = GetString(DUSTMAN_ESSENCE_RUNES_DESC),
+		getFunc = function() return GetSettings().enchanting.enchantingEssence end,
+		setFunc = function(state) GetSettings().enchanting.enchantingEssence = state end,
+		default = defaults.enchanting.enchantingEssence,
+	})
+	for id=1, 19 do
+		table.insert(enchantingSubmenuControls, {
+			type = "checkbox",
+			name = Dustman.GetEssenceRuneName(id),
+			tooltip = Dustman.GetEssenceRuneName(id),
+			getFunc = function() return GetSettings().enchanting.essenceRunes[id][2] end,
+			setFunc = function(state) GetSettings().enchanting.essenceRunes[id][2] = state end,
+			default = defaults.enchanting.essenceRunes[id][2],
+			disabled = function() return not GetSettings().enchanting.enchantingEssence end,
+		})
+	end
+	table.insert(enchantingSubmenuControls, {
+		type = "checkbox",
+		name = GetString(DUSTMAN_FULLSTACK), 
+		tooltip = GetString(DUSTMAN_FULLSTACK_DESC),
+		getFunc = function() return GetSettings().enchanting.essenceFullStack end,
+		setFunc = function(state) GetSettings().enchanting.essenceFullStack = state end,
+		default = defaults.enchanting.essenceFullStack,
+		disabled = function() return not GetSettings().enchanting.enchantingEssence end,
+	})
+	table.insert(enchantingSubmenuControls, {
+		type = "divider",
+    })
+	table.insert(enchantingSubmenuControls, {
+		type = "checkbox",
+		name = GetString(DUSTMAN_POTENCY_RUNES), 
+		tooltip = GetString(DUSTMAN_POTENCY_RUNES_DESC),
+		getFunc = function() return GetSettings().enchanting.enchantingPotency end,
+		setFunc = function(state) GetSettings().enchanting.enchantingPotency = state end,
+		default = defaults.enchanting.enchantingPotency,
+	})
+	for id=1, 28 do
+		table.insert(enchantingSubmenuControls, {
+			type = "checkbox",
+			name = Dustman.GetPotencyRuneName(id),
+			tooltip = Dustman.GetPotencyRuneName(id),
+			getFunc = function() return GetSettings().enchanting.potencyRunes[id][2] end,
+			setFunc = function(state) GetSettings().enchanting.potencyRunes[id][2] = state end,
+			default = defaults.enchanting.potencyRunes[id][2],
+			disabled = function() return not GetSettings().enchanting.enchantingPotency end,
+		})
+	end
+	table.insert(enchantingSubmenuControls, {
+		type = "checkbox",
+		name = GetString(DUSTMAN_FULLSTACK), 
+		tooltip = GetString(DUSTMAN_FULLSTACK_DESC),
+		getFunc = function() return GetSettings().enchanting.potencyFullStack end,
+		setFunc = function(state) GetSettings().enchanting.potencyFullStack = state end,
+		default = defaults.enchanting.potencyFullStack,
+		disabled = function() return not GetSettings().enchanting.enchantingPotency end,
+	})
+	
 	local optionsData = {
 		{			
 			type = "submenu",
-			name = zo_strformat("<<1>> & <<2>>", GetString(SI_ITEMFILTERTYPE1), GetString(SI_ITEMFILTERTYPE2)), --GetString(SI_GAMEPAD_INVENTORY_EQUIPMENT_HEADER)
+			name = GetString(DUSTMAN_WEAP_ARM),
 			controls = {
                 {
 					type = "checkbox",
 					name = GetString(DUSTMAN_WHITE_ZERO),
-					tooltip = GetString(DUSTMAN_WHITE_ZERO_DESC),
-					getFunc = function() return GetSettings().equipment.whiteZeroValue end,
-					setFunc = function(state) GetSettings().equipment.whiteZeroValue = state end,
-					disabled = function() return GetSettings().equipment.enabled end,
-					default = defaults.equipment.whiteZeroValue,
+					tooltip = GetString(DUSTMAN_WHITE_ZERO_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.whiteZeroValue end,
+					setFunc = function(state) GetSettings().equipment.wa.whiteZeroValue = state end,
+					disabled = function() return GetSettings().equipment.wa.enabled end,
+					default = defaults.equipment.wa.whiteZeroValue,
 				},
                 {
                     type = "divider",
@@ -270,20 +431,20 @@ function Dustman.CreateSettingsMenu(defaults)
 				{
 					type = "checkbox",
 					name = GetString(DUSTMAN_EQUIP_NOTRAIT),
-					tooltip = GetString(DUSTMAN_EQUIP_NOTRAIT_DESC),
-					getFunc = function() return GetSettings().equipment.notrait end,
-					setFunc = function(state) GetSettings().equipment.notrait = state; if state then GetSettings().equipment.whiteZeroValue = true end end,
-					default = defaults.equipment.notrait,
+					tooltip = GetString(DUSTMAN_EQUIP_NOTRAIT_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.notrait end,
+					setFunc = function(state) GetSettings().equipment.wa.notrait = state; if state then GetSettings().equipment.wa.whiteZeroValue = true end end,
+					default = defaults.equipment.wa.notrait,
 				},
 				{
 					type = "dropdown",
 					name = GetString(DUSTMAN_QUALITY),
-					tooltip = GetString(DUSTMAN_QUALITY_DESC),
+					tooltip = GetString(DUSTMAN_QUALITY_DESC_WA),
 					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().equipment.notraitQuality] end,
-					setFunc = function(choice) GetSettings().equipment.notraitQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().equipment.notrait end,
-					default = qualityChoices[defaults.equipment.notraitQuality],
+					getFunc = function() return qualityChoices[GetSettings().equipment.wa.notraitQuality] end,
+					setFunc = function(choice) GetSettings().equipment.wa.notraitQuality = reverseQualityChoices[choice] end,
+					disabled = function() return not GetSettings().equipment.wa.notrait end,
+					default = qualityChoices[defaults.equipment.wa.notraitQuality],
 				},
                 {
                     type = "divider",
@@ -291,20 +452,20 @@ function Dustman.CreateSettingsMenu(defaults)
 				{
 					type = "checkbox",
 					name = GetString(DUSTMAN_EQUIPMENT),
-					tooltip = GetString(DUSTMAN_EQUIPMENT_DESC),
-					getFunc = function() return GetSettings().equipment.enabled end,
-					setFunc = function(state) GetSettings().equipment.enabled = state; if state then GetSettings().equipment.whiteZeroValue = true end end,
-					default = defaults.equipment.enabled,
+					tooltip = GetString(DUSTMAN_EQUIPMENT_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.enabled end,
+					setFunc = function(state) GetSettings().equipment.wa.enabled = state; if state then GetSettings().equipment.wa.whiteZeroValue = true end end,
+					default = defaults.equipment.wa.enabled,
 				},
 				{
 					type = "dropdown",
 					name = GetString(DUSTMAN_QUALITY),
 					tooltip = GetString(DUSTMAN_QUALITY_DESC),
 					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().equipment.equipmentQuality] end,
-					setFunc = function(choice) GetSettings().equipment.equipmentQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = qualityChoices[defaults.equipment.equipmentQuality],
+					getFunc = function() return qualityChoices[GetSettings().equipment.wa.equipmentQuality] end,
+					setFunc = function(choice) GetSettings().equipment.wa.equipmentQuality = reverseQualityChoices[choice] end,
+					disabled = function() return not GetSettings().equipment.wa.enabled end,
+					default = qualityChoices[defaults.equipment.wa.equipmentQuality],
 				},
                 {
                     type = "divider",
@@ -312,20 +473,20 @@ function Dustman.CreateSettingsMenu(defaults)
 				{
 					type = "checkbox",
 					name = GetString(DUSTMAN_ORNATE),
-					tooltip = GetString(DUSTMAN_ORNATE_DESC),
-					getFunc = function() return GetSettings().equipment.ornate end,
-					setFunc = function(state) GetSettings().equipment.ornate = state end,
-					default = defaults.equipment.ornate,
+					tooltip = GetString(DUSTMAN_ORNATE_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.ornate end,
+					setFunc = function(state) GetSettings().equipment.wa.ornate = state end,
+					default = defaults.equipment.wa.ornate,
 				},
 				{
 					type = "dropdown",
 					name = GetString(DUSTMAN_QUALITY),
 					tooltip = GetString(DUSTMAN_QUALITY_DESC),
 					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().equipment.ornateQuality] end,
-					setFunc = function(choice) GetSettings().equipment.ornateQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().equipment.ornate end,
-					default = qualityChoices[defaults.equipment.ornateQuality],
+					getFunc = function() return qualityChoices[GetSettings().equipment.wa.ornateQuality] end,
+					setFunc = function(choice) GetSettings().equipment.wa.ornateQuality = reverseQualityChoices[choice] end,
+					disabled = function() return not GetSettings().equipment.wa.ornate end,
+					default = qualityChoices[defaults.equipment.wa.ornateQuality],
 				},
                 {
                     type = "divider",
@@ -333,20 +494,20 @@ function Dustman.CreateSettingsMenu(defaults)
 				{
 					type = "checkbox",
 					name = GetString(DUSTMAN_INTRICATE),
-					tooltip = GetString(DUSTMAN_INTRICATE_DESC),
-					getFunc = function() return GetSettings().equipment.keepIntricate end,
-					setFunc = function(state) GetSettings().equipment.keepIntricate = state end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = defaults.equipment.keepIntricate,
+					tooltip = GetString(DUSTMAN_INTRICATE_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepIntricate end,
+					setFunc = function(state) GetSettings().equipment.wa.keepIntricate = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled end,
+					default = defaults.equipment.wa.keepIntricate,
 				},
 				{
 					type = "checkbox",
 					name = GetString(DUSTMAN_INTRIC_MAX),
-					tooltip = GetString(DUSTMAN_INTRIC_MAX_DESC),
-					getFunc = function() return GetSettings().equipment.keepIntricateIfNotMaxed end,
-					setFunc = function(state) GetSettings().equipment.keepIntricateIfNotMaxed = state end,
-					disabled = function() return not (GetSettings().equipment.enabled and GetSettings().equipment.keepIntricate) end,
-					default = defaults.equipment.keepIntricateIfNotMaxed,
+					tooltip = GetString(DUSTMAN_INTRIC_MAX_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepIntricateIfNotMaxed end,
+					setFunc = function(state) GetSettings().equipment.wa.keepIntricateIfNotMaxed = state end,
+					disabled = function() return not (GetSettings().equipment.wa.enabled and GetSettings().equipment.wa.keepIntricate) end,
+					default = defaults.equipment.wa.keepIntricateIfNotMaxed,
 				},
                 {
 					type = "divider",
@@ -354,72 +515,169 @@ function Dustman.CreateSettingsMenu(defaults)
                 {
 					type = "checkbox",
 					name = GetString(DUSTMAN_RESEARCH),
-					tooltip = GetString(DUSTMAN_RESEARCH_DESC),
-					getFunc = function() return GetSettings().equipment.keepResearchable end,
-					setFunc = function(state) GetSettings().equipment.keepResearchable = state end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = defaults.equipment.keepResearchable,
-				},
-				{
-					type = "checkbox",
-					name = GetString(DUSTMAN_NIRNHONED),
-					tooltip = GetString(DUSTMAN_NIRNHONED_DESC),
-					getFunc = function() return GetSettings().equipment.keepNirnhoned end,
-					setFunc = function(state) GetSettings().equipment.keepNirnhoned = state end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = defaults.equipment.keepNirnhoned,
-				},
-				{
-					type = "checkbox",
-					name = GetString(DUSTMAN_SET),
-					tooltip = GetString(DUSTMAN_SET_DESC),
-					getFunc = function() return GetSettings().equipment.keepSetItems end,
-					setFunc = function(state) GetSettings().equipment.keepSetItems = state end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = defaults.equipment.keepSetItems,
-				},
-				{
-					type = "checkbox",
-					name = GetString(DUSTMAN_RARE),
-					tooltip = GetString(DUSTMAN_RARE_DESC),
-					getFunc = function() return GetSettings().equipment.keepRareStyle end,
-					setFunc = function(state) GetSettings().equipment.keepRareStyle = state end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = defaults.equipment.keepRareStyle,
-				},
-				{
-					type = "checkbox",
-					name = GetString(DUSTMAN_MAELS_MAST),
-					tooltip = GetString(DUSTMAN_MAELS_MAST_DESC),
-					getFunc = function() return GetSettings().equipment.keepMaelAndMast end,
-					setFunc = function(state) GetSettings().equipment.keepMaelAndMast = state end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = defaults.equipment.keepMaelAndMast,
+					tooltip = GetString(DUSTMAN_RESEARCH_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepResearchable end,
+					setFunc = function(state) GetSettings().equipment.wa.keepResearchable = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled end,
+					default = defaults.equipment.wa.keepResearchable,
 				},
 				{
 					type = "dropdown",
 					name = GetString(DUSTMAN_LEVEL),
-					tooltip = GetString(DUSTMAN_LEVEL_DESC),
+					tooltip = GetString(DUSTMAN_LEVEL_DESC_WA),
 					choices = levelChoices,
-					getFunc = function() return levelChoices[valueLevelChoice[GetSettings().equipment.keepLevel]] end,
+					getFunc = function() return levelChoices[valueLevelChoice[GetSettings().equipment.wa.keepLevel]] end,
 					setFunc = function(choice)
 						if reverseLevelChoices[choice] then
-							GetSettings().equipment.keepLevel = reverseLevelChoices[choice]
+							GetSettings().equipment.wa.keepLevel = reverseLevelChoices[choice]
 						else
-							GetSettings().equipment.keepLevel = defaults.equipment.keepLevel
+							GetSettings().equipment.wa.keepLevel = defaults.equipment.wa.keepLevel
 						end
 					end,
-					disabled = function() return not GetSettings().equipment.enabled end,
-					default = levelChoices[defaults.equipment.keepLevel],
+					disabled = function() return not GetSettings().equipment.wa.enabled end,
+					default = levelChoices[defaults.equipment.wa.keepLevel],
 				},
 				{
 					type = "checkbox",
 					name = GetString(DUSTMAN_LEVEL_ORNATE),
-					tooltip = GetString(DUSTMAN_LEVEL_ORNATE_DESC),
-					getFunc = function() return GetSettings().equipment.keepLevelOrnate end,
-					setFunc = function(state) GetSettings().equipment.keepLevelOrnate = state end,
-					disabled = function() return not GetSettings().equipment.ornate or GetSettings().equipment.keepLevel == 1 end,
-					default = defaults.equipment.keepLevelOrnate,
+					tooltip = GetString(DUSTMAN_LEVEL_ORNATE_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepLevelOrnate end,
+					setFunc = function(state) GetSettings().equipment.wa.keepLevelOrnate = state end,
+					disabled = function() return not GetSettings().equipment.wa.ornate or GetSettings().equipment.wa.keepLevel == 1 end,
+					default = defaults.equipment.wa.keepLevelOrnate,
+				},
+								{
+					type = "checkbox",
+					name = GetString(DUSTMAN_NIRNHONED),
+					tooltip = GetString(DUSTMAN_NIRNHONED_DESC),
+					getFunc = function() return GetSettings().equipment.wa.keepNirnhoned end,
+					setFunc = function(state) GetSettings().equipment.wa.keepNirnhoned = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled end,
+					default = defaults.equipment.wa.keepNirnhoned,
+				},
+				{
+					type = "divider",
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET),
+					tooltip = GetString(DUSTMAN_SET_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepSetItems end,
+					setFunc = function(state) GetSettings().equipment.wa.keepSetItems = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled end,
+					default = defaults.equipment.wa.keepSetItems,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_BG),
+					tooltip = GetString(DUSTMAN_SET_BG_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepBG end,
+					setFunc = function(state) GetSettings().equipment.wa.keepBG = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepBG,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_CRAFTED),
+					tooltip = GetString(DUSTMAN_SET_CRAFTED_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepCrafted end,
+					setFunc = function(state) GetSettings().equipment.wa.keepCrafted = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepCrafted,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_CYRO),
+					tooltip = GetString(DUSTMAN_SET_CYRO_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepCyro end,
+					setFunc = function(state) GetSettings().equipment.wa.keepCyro = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepCyro,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_DUNG),
+					tooltip = GetString(DUSTMAN_SET_DUNG_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepDungeon end,
+					setFunc = function(state) GetSettings().equipment.wa.keepDungeon = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepDungeon,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_IC),
+					tooltip = GetString(DUSTMAN_SET_IC_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepIC end,
+					setFunc = function(state) GetSettings().equipment.wa.keepIC = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepIC,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_OVERLAND),
+					tooltip = GetString(DUSTMAN_SET_OVERLAND_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepOverland end,
+					setFunc = function(state) GetSettings().equipment.wa.keepOverland = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepOverland,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_SPEC),
+					tooltip = GetString(DUSTMAN_SET_SPEC_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepSpecial end,
+					setFunc = function(state) GetSettings().equipment.wa.keepSpecial = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepSpecial,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_TRIAL),
+					tooltip = GetString(DUSTMAN_SET_TRIAL_DESC_WA),
+					getFunc = function() return GetSettings().equipment.wa.keepTrial end,
+					setFunc = function(state) GetSettings().equipment.wa.keepTrial = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepTrial,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_ARENA),
+					tooltip = GetString(DUSTMAN_SET_ARENA_DESC),
+					getFunc = function() return GetSettings().equipment.wa.keepArenaWeapons end,
+					setFunc = function(state) GetSettings().equipment.wa.keepArenaWeapons = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepArenaWeapons,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_MS),
+					tooltip = GetString(DUSTMAN_SET_MS_DESC),
+					getFunc = function() return GetSettings().equipment.wa.keepMonsterSets end,
+					setFunc = function(state) GetSettings().equipment.wa.keepMonsterSets = state end,
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepMonsterSets,
+				},
+				{
+					type = "divider",
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_DISGUISES),
+					tooltip = GetString(DUSTMAN_DISGUISES_DESC),
+					getFunc = function() return GetSettings().equipment.wa.disguises end,
+					setFunc = function(state) GetSettings().equipment.wa.disguises = state end,
+					width = "half",
+					default = defaults.equipment.wa.disguises,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_DISGUISES_DESTROY),
+					tooltip = GetString(DUSTMAN_DISGUISES_DESTROY_DESC),
+					getFunc = function() return GetSettings().equipment.wa.disguisesDestroy end,
+					setFunc = function(state) GetSettings().equipment.wa.disguisesDestroy = state end,
+					width = "half",
+					disabled = function() return not GetSettings().equipment.wa.disguises end,
+					default = defaults.equipment.wa.disguisesDestroy,
 				},
 			},
 		},
@@ -427,118 +685,239 @@ function Dustman.CreateSettingsMenu(defaults)
 			type = "submenu",
 			name = GetString(SI_GAMEPADITEMCATEGORY38), --Jewels
 			controls = {
-				{
-					type = "checkbox",
-					name = GetString(DUSTMAN_JEWELS_NOTRAIT),
-					tooltip = GetString(DUSTMAN_JEWELS_NOTRAIT_DESC),
-					getFunc = function() return GetSettings().equipment.notraitJewels end,
-					setFunc = function(state) GetSettings().equipment.notraitJewels = state; if state then GetSettings().equipment.whiteZeroValue = true end end,
-					default = defaults.equipment.notraitJewels,
-				},
                 {
 					type = "checkbox",
-					name = GetString(DUSTMAN_RESEARCH_JEWELS),
-					tooltip = GetString(DUSTMAN_RESEARCH_JEWELS_DESC),
-					getFunc = function() return GetSettings().equipment.keepResearchableJewels end,
-					setFunc = function(state) GetSettings().equipment.keepResearchableJewels = state end,
-					disabled = function() return not GetSettings().equipment.jewelsEnabled end,
-					default = defaults.equipment.keepResearchableJewels,
+					name = GetString(DUSTMAN_WHITE_ZERO),
+					tooltip = GetString(DUSTMAN_WHITE_ZERO_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.whiteZeroValue end,
+					setFunc = function(state) GetSettings().equipment.j.whiteZeroValue = state end,
+					disabled = function() return GetSettings().equipment.j.enabled end,
+					default = defaults.equipment.j.whiteZeroValue,
 				},
                 {
                     type = "divider",
                 },
 				{
 					type = "checkbox",
-					name = GetString(DUSTMAN_JEWELS),
-					tooltip = GetString(DUSTMAN_JEWELS_DESC),
-					getFunc = function() return GetSettings().equipment.jewelsEnabled end,
-					setFunc = function(state) GetSettings().equipment.jewelsEnabled = state; if state then GetSettings().equipment.whiteZeroValue = true end end,
-					default = defaults.equipment.jewelsEnabled,
+					name = GetString(DUSTMAN_EQUIP_NOTRAIT),
+					tooltip = GetString(DUSTMAN_EQUIP_NOTRAIT_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.notrait end,
+					setFunc = function(state) GetSettings().equipment.j.notrait = state; if state then GetSettings().equipment.j.whiteZeroValue = true end end,
+					default = defaults.equipment.j.notrait,
+				},
+				{
+					type = "dropdown",
+					name = GetString(DUSTMAN_QUALITY),
+					tooltip = GetString(DUSTMAN_QUALITY_DESC_J),
+					choices = qualityChoices,
+					getFunc = function() return qualityChoices[GetSettings().equipment.j.notraitQuality] end,
+					setFunc = function(choice) GetSettings().equipment.j.notraitQuality = reverseQualityChoices[choice] end,
+					disabled = function() return not GetSettings().equipment.j.notrait end,
+					default = qualityChoices[defaults.equipment.j.notraitQuality],
+				},
+                {
+                    type = "divider",
+                },
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_EQUIPMENT),
+					tooltip = GetString(DUSTMAN_EQUIPMENT_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.enabled end,
+					setFunc = function(state) GetSettings().equipment.j.enabled = state; if state then GetSettings().equipment.j.whiteZeroValue = true end end,
+					default = defaults.equipment.j.enabled,
 				},
 				{
 					type = "dropdown",
 					name = GetString(DUSTMAN_QUALITY),
 					tooltip = GetString(DUSTMAN_QUALITY_DESC),
 					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().equipment.jewelsQuality] end,
-					setFunc = function(choice) GetSettings().equipment.jewelsQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().equipment.jewelsEnabled end,
-					default = qualityChoices[defaults.equipment.jewelsQuality],
+					getFunc = function() return qualityChoices[GetSettings().equipment.j.equipmentQuality] end,
+					setFunc = function(choice) GetSettings().equipment.j.equipmentQuality = reverseQualityChoices[choice] end,
+					disabled = function() return not GetSettings().equipment.j.enabled end,
+					default = qualityChoices[defaults.equipment.j.equipmentQuality],
 				},
                 {
                     type = "divider",
                 },
 				{
 					type = "checkbox",
-					name = GetString(DUSTMAN_ORNATE_JEWELS),
-					tooltip = GetString(DUSTMAN_ORNATE_JEWELS_DESC),
-					getFunc = function() return GetSettings().equipment.jewelsOrnate end,
-					setFunc = function(state) GetSettings().equipment.jewelsOrnate = state end,
-					default = defaults.equipment.jewelsOrnate,
+					name = GetString(DUSTMAN_ORNATE),
+					tooltip = GetString(DUSTMAN_ORNATE_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.ornate end,
+					setFunc = function(state) GetSettings().equipment.j.ornate = state end,
+					default = defaults.equipment.j.ornate,
 				},
 				{
 					type = "dropdown",
 					name = GetString(DUSTMAN_QUALITY),
 					tooltip = GetString(DUSTMAN_QUALITY_DESC),
 					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().equipment.jewelsOrnateQuality] end,
-					setFunc = function(choice) GetSettings().equipment.jewelsOrnateQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().equipment.jewelsOrnate end,
-					default = qualityChoices[defaults.equipment.jewelsOrnateQuality],
-				},
-                {
-                    type = "divider",
-                },
-                {
-					type = "checkbox",
-					name = GetString(DUSTMAN_JEWELS_INTRICATE),
-					tooltip = GetString(DUSTMAN_JEWELS_INTRICATE_DESC),
-					getFunc = function() return GetSettings().equipment.keepIntricateJewels end,
-					setFunc = function(state) GetSettings().equipment.keepIntricateJewels = state end,
-					disabled = function() return not GetSettings().equipment.jewelsEnabled end,
-					default = defaults.equipment.keepIntricateJewels,
-				},
-				{
-					type = "checkbox",
-					name = GetString(DUSTMAN_JEWELS_INTRIC_MAX),
-					tooltip = GetString(DUSTMAN_JEWELS_INTRIC_MAX_DESC),
-					getFunc = function() return GetSettings().equipment.keepIntricateJewelsIfNotMaxed end,
-					setFunc = function(state) GetSettings().equipment.keepIntricateJewelsIfNotMaxed = state end,
-					disabled = function() return not (GetSettings().equipment.jewelsEnabled and GetSettings().equipment.keepIntricateJewels) end,
-					default = defaults.equipment.keepIntricateJewelsIfNotMaxed,
+					getFunc = function() return qualityChoices[GetSettings().equipment.j.ornateQuality] end,
+					setFunc = function(choice) GetSettings().equipment.j.ornateQuality = reverseQualityChoices[choice] end,
+					disabled = function() return not GetSettings().equipment.j.ornate end,
+					default = qualityChoices[defaults.equipment.j.ornateQuality],
 				},
                 {
                     type = "divider",
                 },
 				{
 					type = "checkbox",
-					name = GetString(DUSTMAN_JEWELS_SET),
-					tooltip = GetString(DUSTMAN_JEWELS_SET_DESC),
-					getFunc = function() return GetSettings().equipment.keepJewelsSetItems end,
-					setFunc = function(state) GetSettings().equipment.keepJewelsSetItems = state end,
-					default = defaults.equipment.keepJewelsSetItems,
-					disabled = function() return not GetSettings().equipment.jewelsEnabled end,
+					name = GetString(DUSTMAN_INTRICATE),
+					tooltip = GetString(DUSTMAN_INTRICATE_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepIntricate end,
+					setFunc = function(state) GetSettings().equipment.j.keepIntricate = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled end,
+					default = defaults.equipment.j.keepIntricate,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_INTRIC_MAX),
+					tooltip = GetString(DUSTMAN_INTRIC_MAX_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepIntricateIfNotMaxed end,
+					setFunc = function(state) GetSettings().equipment.j.keepIntricateIfNotMaxed = state end,
+					disabled = function() return not (GetSettings().equipment.j.enabled and GetSettings().equipment.j.keepIntricate) end,
+					default = defaults.equipment.j.keepIntricateIfNotMaxed,
+				},
+                {
+					type = "divider",
+				},
+                {
+					type = "checkbox",
+					name = GetString(DUSTMAN_RESEARCH),
+					tooltip = GetString(DUSTMAN_RESEARCH_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepResearchable end,
+					setFunc = function(state) GetSettings().equipment.j.keepResearchable = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled end,
+					default = defaults.equipment.j.keepResearchable,
 				},
 				{
 					type = "dropdown",
-					name = GetString(DUSTMAN_QUALITY_SUPP),
-					tooltip = GetString(DUSTMAN_QUALITY_SUPP_DESC),
-					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().equipment.jewelsSetQuality] end,
-					setFunc = function(choice) GetSettings().equipment.jewelsSetQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().equipment.keepJewelsSetItems end,
-					default = qualityChoices[defaults.equipment.jewelsSetQuality],
+					name = GetString(DUSTMAN_LEVEL),
+					tooltip = GetString(DUSTMAN_LEVEL_DESC_J),
+					choices = levelChoices,
+					getFunc = function() return levelChoices[valueLevelChoice[GetSettings().equipment.j.keepLevel]] end,
+					setFunc = function(choice)
+						if reverseLevelChoices[choice] then
+							GetSettings().equipment.j.keepLevel = reverseLevelChoices[choice]
+						else
+							GetSettings().equipment.j.keepLevel = defaults.equipment.j.keepLevel
+						end
+					end,
+					disabled = function() return not GetSettings().equipment.j.enabled end,
+					default = levelChoices[defaults.equipment.j.keepLevel],
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_LEVEL_ORNATE),
+					tooltip = GetString(DUSTMAN_LEVEL_ORNATE_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepLevelOrnate end,
+					setFunc = function(state) GetSettings().equipment.j.keepLevelOrnate = state end,
+					disabled = function() return not GetSettings().equipment.j.ornate or GetSettings().equipment.j.keepLevel == 1 end,
+					default = defaults.equipment.j.keepLevelOrnate,
+				},
+				{
+					type = "divider",
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET),
+					tooltip = GetString(DUSTMAN_SET_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepSetItems end,
+					setFunc = function(state) GetSettings().equipment.j.keepSetItems = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled end,
+					default = defaults.equipment.j.keepSetItems,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_BG),
+					tooltip = GetString(DUSTMAN_SET_BG_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepBG end,
+					setFunc = function(state) GetSettings().equipment.j.keepBG = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepBG,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_CRAFTED),
+					tooltip = GetString(DUSTMAN_SET_CRAFTED_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepCrafted end,
+					setFunc = function(state) GetSettings().equipment.j.keepCrafted = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepCrafted,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_CYRO),
+					tooltip = GetString(DUSTMAN_SET_CYRO_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepCyro end,
+					setFunc = function(state) GetSettings().equipment.j.keepCyro = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepCyro,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_DUNG),
+					tooltip = GetString(DUSTMAN_SET_DUNG_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepDungeon end,
+					setFunc = function(state) GetSettings().equipment.j.keepDungeon = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepDungeon,
+				},
+								{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_IC),
+					tooltip = GetString(DUSTMAN_SET_IC_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepIC end,
+					setFunc = function(state) GetSettings().equipment.j.keepIC = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepIC,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_OVERLAND),
+					tooltip = GetString(DUSTMAN_SET_OVERLAND_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepOverland end,
+					setFunc = function(state) GetSettings().equipment.j.keepOverland = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepOverland,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_SPEC),
+					tooltip = GetString(DUSTMAN_SET_SPEC_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepSpecial end,
+					setFunc = function(state) GetSettings().equipment.j.keepSpecial = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepSpecial,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_TRIAL),
+					tooltip = GetString(DUSTMAN_SET_TRIAL_DESC_J),
+					getFunc = function() return GetSettings().equipment.j.keepTrial end,
+					setFunc = function(state) GetSettings().equipment.j.keepTrial = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepTrial,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_RANDIC),
+					tooltip = GetString(DUSTMAN_SET_RANDIC_DESC),
+					getFunc = function() return GetSettings().equipment.j.keepDRandIC end,
+					setFunc = function(state) GetSettings().equipment.j.keepDRandIC = state end,
+					disabled = function() return not GetSettings().equipment.j.enabled or GetSettings().equipment.j.keepSetItems end,
+					default = defaults.equipment.j.keepDRandIC,
 				},
 			},
 		},
         {
 			type = "submenu",
-			name = zo_strformat("<<1>> & <<2>> & <<3>>(<<4>>)", GetString("SI_ITEMTYPE", ITEMTYPE_WEAPON), GetString(SI_SPECIALIZEDITEMTYPE300), GetString(SI_GAMEPADITEMCATEGORY38), GetString(SI_CRAFTING_COMPONENT_TOOLTIP_TRAITS)),
+			name = zo_strformat("<<1>> (<<2>>)", GetString(DUSTMAN_WEAP_ARM_JEWL), GetString(SI_CRAFTING_COMPONENT_TOOLTIP_TRAITS)),
 			controls = itemsTraitsSubmenuControls,
 		},
 		{
 			type = "submenu",
-			name = zo_strformat("<<1>>", GetString("SI_ITEMTYPE", ITEMTYPE_STYLE_MATERIAL)),
+			name = GetString(DUSTMAN_STYLE_MATERIALS),
 			controls = styleSubmenuControls,
 		},
 		{
@@ -687,74 +1066,70 @@ function Dustman.CreateSettingsMenu(defaults)
 		},
 		{
 			type = "submenu",
-			name = zo_strformat("<<1>> & <<2>>", GetString(SI_GAMEPADITEMCATEGORY13), GetString("SI_ITEMTYPE", ITEMTYPE_ENCHANTING_RUNE_ASPECT)), --Glyphs
+			name = GetString(DUSTMAN_FURNISHING_MATERIALS), --Furnishing materials
 			controls = {
 				{
 					type = "checkbox",
-					name = GetString(DUSTMAN_GLYPHS),
-					tooltip = GetString(DUSTMAN_GLYPHS_DESC),
-					getFunc = function() return GetSettings().glyphs end,
-					setFunc = function(state) GetSettings().glyphs = state end,
-					default = defaults.glyphs,
-				},
-                
-				{
-					type = "dropdown",
-					name = GetString(DUSTMAN_QUALITY),
-					tooltip = GetString(DUSTMAN_QUALITY_DESC),
-					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().glyphsQuality] end,
-					setFunc = function(choice) GetSettings().glyphsQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().glyphs end,
-					default = qualityChoices[defaults.glyphsQuality],
-				},
-				{
-					type = "dropdown",
-					name = GetString(DUSTMAN_LEVELGLYPH),
-					tooltip = GetString(DUSTMAN_LEVELGLYPH_DESC),
-					choices = levelGlyphChoices,
-					getFunc = function() return levelGlyphChoices[valueLevelGlyphChoice[GetSettings().keepLevelGlyphs]] end,
-					setFunc = function(choice)
-						if reverseLevelGlyphChoices[choice] then
-							GetSettings().keepLevelGlyphs = reverseLevelGlyphChoices[choice]
-						else
-							GetSettings().keepLevelGlyphs = defaults.keepLevelGlyphs
-						end
-					end,
-					disabled = function() return not GetSettings().glyphs end,
-					default = levelGlyphChoices[defaults.keepLevelGlyphs],
-				},
-                {
-                    type = "divider",
-                },
-				{
-					type = "checkbox",
-					name = GetString(DUSTMAN_ASPECT_RUNES),
-					tooltip = GetString(DUSTMAN_ASPECT_RUNES_DESC),
-					getFunc = function() return GetSettings().enchanting.enchantingAspect end,
-					setFunc = function(state) GetSettings().enchanting.enchantingAspect = state end,
-					default = defaults.enchanting.enchantingAspect,
-				},
-				{
-					type = "dropdown",
-					name = GetString(DUSTMAN_QUALITY),
-					tooltip = GetString(DUSTMAN_QUALITY_DESC),
-					choices = qualityChoices,
-					getFunc = function() return qualityChoices[GetSettings().enchanting.aspectQuality] end,
-					setFunc = function(choice) GetSettings().enchanting.aspectQuality = reverseQualityChoices[choice] end,
-					disabled = function() return not GetSettings().enchanting.enchantingAspect end,
-					default = qualityChoices[defaults.enchanting.aspectQuality],
+					name = GetString(DUSTMAN_ALCHRESIN),
+					getFunc = function() return GetSettings().furnishing.alchResin end,
+					setFunc = function(state) GetSettings().furnishing.alchResin = state end,
+					default = defaults.furnishing.alchResin,
 				},
 				{
 					type = "checkbox",
-					name = GetString(DUSTMAN_FULLSTACK), 
-					tooltip = GetString(DUSTMAN_FULLSTACK_DESC),
-					getFunc = function() return GetSettings().enchanting.aspectFullStack end,
-					setFunc = function(state) GetSettings().enchanting.aspectFullStack = state end,
-					disabled = function() return not GetSettings().enchanting.enchantingAspect end,
-					default = defaults.enchanting.aspectFullStack,
+					name = GetString(DUSTMAN_BAST),
+					getFunc = function() return GetSettings().furnishing.bast end,
+					setFunc = function(state) GetSettings().furnishing.bast = state end,
+					default = defaults.furnishing.bast,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_CLEANPELT),
+					getFunc = function() return GetSettings().furnishing.cleanPelt end,
+					setFunc = function(state) GetSettings().furnishing.cleanPelt = state end,
+					default = defaults.furnishing.cleanPelt,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_DECWAX),
+					getFunc = function() return GetSettings().furnishing.decWax end,
+					setFunc = function(state) GetSettings().furnishing.decWax = state end,
+					default = defaults.furnishing.decWax,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_HEARTWOOD),
+					getFunc = function() return GetSettings().furnishing.heartwood end,
+					setFunc = function(state) GetSettings().furnishing.heartwood = state end,
+					default = defaults.furnishing.heartwood,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_MUNDRUNE),
+					getFunc = function() return GetSettings().furnishing.mundRune end,
+					setFunc = function(state) GetSettings().furnishing.mundRune = state end,
+					default = defaults.furnishing.mundRune,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_OCHRE),
+					getFunc = function() return GetSettings().furnishing.ochre end,
+					setFunc = function(state) GetSettings().furnishing.ochre = state end,
+					default = defaults.furnishing.ochre,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_REGULUS),
+					getFunc = function() return GetSettings().furnishing.regulus end,
+					setFunc = function(state) GetSettings().furnishing.regulus = state end,
+					default = defaults.furnishing.regulus,
 				},
 			},
+		},
+		{
+			type = "submenu",
+			name = GetString(SI_CUSTOMERSERVICESUBMITFEEDBACKSUBCATEGORIES203), --Enchanting
+			controls = enchantingSubmenuControls,
 		},
 		{
 			type = "submenu",
@@ -962,11 +1337,32 @@ function Dustman.CreateSettingsMenu(defaults)
 					disabled = function() return not GetSettings().housingRecipes end,
 					default = qualityChoices[defaults.housingRecipesQuality],
 				},
+				{
+                    type = "divider",
+                },
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_JEWELRY_MASTER_WRITS),
+					tooltip = GetString(DUSTMAN_JEWELRY_MASTER_WRITS_DESC),
+					getFunc = function() return GetSettings().jewelryMasterWrits end,
+					setFunc = function(state) GetSettings().jewelryMasterWrits = state end,
+					default = defaults.jewelryMasterWrits,
+				},
+				{
+					type = "dropdown",
+					name = GetString(DUSTMAN_QUALITY),
+					tooltip = GetString(DUSTMAN_QUALITY_DESC),
+					choices = { unpack( jewMasterWritsQualityChoices, 3, 6 ) },
+					getFunc = function() return jewMasterWritsQualityChoices[GetSettings().jewelryMasterWritsQuality] end,
+					setFunc = function(choice) GetSettings().jewelryMasterWritsQuality = jewMasterWritsReverseQualityChoices[choice] end,
+					disabled = function() return not GetSettings().jewelryMasterWrits end,
+					default = jewMasterWritsQualityChoices[defaults.jewelryMasterWritsQuality],
+				},
 			},
 		},
 		{
 			type = "submenu",
-			name = GetString(SI_GAMECAMERAACTIONTYPE16), --Fish
+			name = GetString(DUSTMAN_FISHES), --Fish
 			controls = {
                 {
 					 type = "checkbox",
@@ -1080,6 +1476,25 @@ function Dustman.CreateSettingsMenu(defaults)
 					getFunc = function() return GetSettings().trophies end,
 					setFunc = function(state) GetSettings().trophies = state end,
 					default = defaults.trophies,
+				},
+								{
+					type = "checkbox",
+					name = GetString(DUSTMAN_MUSEUM_PIECES),
+					tooltip = GetString(DUSTMAN_MUSEUM_PIECES_DESC),
+					getFunc = function() return GetSettings().museumPieces end,
+					setFunc = function(state) GetSettings().museumPieces = state end,
+					width = "half",
+					default = defaults.museumPieces,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_MUSEUM_PIECES_DESTROY),
+					tooltip = GetString(DUSTMAN_MUSEUM_PIECES_DESTROY_DESC),
+					getFunc = function() return GetSettings().museumPiecesDestroy end,
+					setFunc = function(state) GetSettings().museumPiecesDestroy = state end,
+					width = "half",
+					disabled = function() return not GetSettings().museumPieces end,
+					default = defaults.museumPiecesDestroy,
 				},
 			},
 		},
@@ -1408,7 +1823,35 @@ function Dustman.CreateSettingsMenu(defaults)
 					setFunc = function(state) GetSettings().notifications.sell = state end,
 					default = defaults.notifications.sell,
 				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_AUTOMATIC_SCAN),
+					tooltip = GetString(DUSTMAN_AUTOMATIC_SCAN_DESC),
+					getFunc = function() return GetSettings().automaticScan end,
+					setFunc = function(state) GetSettings().automaticScan = state; if state then Dustman.Sweep() end end,					
+					default = defaults.automaticScan,
+				},
                 {
+                    type = "divider",
+                },
+				{
+					type = "dropdown",
+					name = GetString(DUSTMAN_BOT),
+					tooltip = GetString(DUSTMAN_BOT_DESC),
+					choices = {GetString(SI_DIALOG_NO),GetString(DUSTMAN_BOT_DD_ALL),GetString(DUSTMAN_BOT_DD_ACTIVE)},
+					getFunc = function() return getBoT(GetSettings().bot) end,
+					setFunc = function(choice) 
+						if choice == GetString(SI_DIALOG_NO) 
+							then GetSettings().bot = 1
+						elseif choice == GetString(DUSTMAN_BOT_DD_ALL) 
+							then GetSettings().bot = 2 
+						elseif choice == GetString(DUSTMAN_BOT_DD_ACTIVE)
+							then GetSettings().bot = 3 
+						end
+					end,
+					default = GetString(SI_DIALOG_NO)
+				},
+				{
                     type = "divider",
                 },
 				{

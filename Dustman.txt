@@ -4,13 +4,13 @@
 ; States and/or other countries. All rights reserved.
 ; You can read the full terms at https://account.elderscrollsonline.com/add-on-terms
 
-## Title: |cEFEBBEDustman|r
-## Version: 9.7.2
+## Title: |c8B0000Dust|r|cE94A2Fman|r
+## Version: 10.8
 ## Author: Ayantir, Garkin & iFedix
 ## Description: Automates management of unwanted items
-## APIVersion: 100028
+## APIVersion: 100035
 ## SavedVariables: Dustman_SavedVariables Dustman_GlobalSavedVariables Dustman_Junk_SavedVariables Dustman_Junk_GlobalSavedVariables
-## DependsOn: LibAddonMenu-2.0 LibResearch
+## DependsOn: LibAddonMenu-2.0 LibResearch LibSets
 
 Language/strings.lua
 Language/$(language).lua

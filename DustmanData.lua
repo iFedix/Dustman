@@ -1,6 +1,6 @@
 --[[
 -------------------------------------------------------------------------------
--- Dustman, by Ayantir
+-- Dustman, by Ayantir & iFedix
 -------------------------------------------------------------------------------
 This software is under : CreativeCommons CC BY-NC-SA 4.0
 Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
@@ -122,8 +122,64 @@ local whitelistedPotion = {
     ["71073"] = true, -- AvA Stam
     ["71071"] = true, -- AvA Health
     ["71072"] = true, -- AvA Magicka
-	 ["74728"] = true, -- TG Stam/Stealth
-	 ["74728"] = true, -- TG Stam/Speed
+	["74728"] = true, -- TG Stam/Stealth
+	["74728"] = true, -- TG Stam/Speed
+}
+
+local essenceRunes = {
+	[1] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45839:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Dekeipa
+	[2] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45833:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Deni
+	[3] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45836:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Denima
+	[4] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45842:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Deteri
+	[5] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:68342:20:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Hakeijo
+	[6] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45841:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Haoko
+	[7] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:166045:20:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Indeko
+	[8] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45849:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Kaderi
+	[9] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45837:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Kuoko
+	[10] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45848:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Makderi
+	[11] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45832:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Makko
+	[12] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45835:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Makkoma
+	[13] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45840:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Meip
+	[14] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45831:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Oko
+	[15] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45834:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Okoma
+	[16] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45843:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Okori
+	[17] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45846:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Oru
+	[18] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45838:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Rakeipa
+	[19] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45847:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Taderi
+}
+
+local potencyRunes = {
+	[1] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45812:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Denara
+	[2] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45814:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Derado
+	[3] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45822:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Edode
+	[4] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45809:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Edora
+	[5] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45825:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Hade
+	[6] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45826:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Idode
+	[7] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:68340:30:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Itade
+	[8] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45810:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Jaera
+	[9] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45821:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Jayde
+	[10] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:64508:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Jehade
+	[11] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45806:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Jejora
+	[12] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45857:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Jera
+	[13] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45855:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Jora
+	[14] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45828:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Kedeko
+	[15] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45830:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Kude
+	[16] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45816:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Kura
+	[17] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45818:30:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Notade
+	[18] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45819:30:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Ode
+	[19] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45807:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Odra
+	[20] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45827:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Pode
+	[21] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45823:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Pojode
+	[22] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45808:30:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Pojora
+	[23] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45811:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Pora
+	[24] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45856:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Porade
+	[25] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45829:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Rede
+	[26] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:64509:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Rejera
+	[27] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45824:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Rekude
+	[28] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45815:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Rekura
+	[29] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:68341:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Repora
+	[30] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45813:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Rera
+	[31] = zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemLinkName("|H0:item:45820:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h")), --Tade
 }
 
 function Dustman.IsWhitelistedPotion(itemId)
@@ -135,6 +191,13 @@ function Dustman.IsOnIgnoreList(itemId)
    return ignoreList[itemId] or false
 end
 
+function Dustman.GetEssenceRuneName(id)
+	return essenceRunes[id]
+end
+
+function Dustman.GetPotencyRuneName(id)
+	return potencyRunes[id]
+end
 
 function Dustman.IsCommonStyle(itemStyle)
 	return itemStyles[itemStyle]

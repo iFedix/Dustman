@@ -1,6 +1,6 @@
 --[[
 -------------------------------------------------------------------------------
--- Dustman, by Ayantir
+-- Dustman, by Ayantir & iFedix
 -------------------------------------------------------------------------------
 This software is under : CreativeCommons CC BY-NC-SA 4.0
 Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
@@ -33,6 +33,7 @@ local ADDON_NAME = "Dustman"
 
 -- Libraries ------------------------------------------------------------------
 local LR = LibResearch
+local LS = LibSets
 
 -- Local variables ------------------------------------------------------------
 local usableIngredients = {}
@@ -45,6 +46,7 @@ local isItemJunk
 local descriptorName = GetString(SI_ITEM_ACTION_MARK_AS_JUNK)
 local markedAsJunk = {}
 local globalMarkedAsJunk = {}
+local requestedScan
 
 local TUTORIAL_ACHIEVEMENT = 993
 local inventorySingleSlotUpdate
@@ -54,33 +56,66 @@ local defaults = {
 	useGlobalSettings = true,
 	--equipable items
 	equipment = {
-		notrait = false,
-		notraitQuality = ITEM_QUALITY_NORMAL,
-		enabled = false,
-		equipmentQuality = ITEM_QUALITY_NORMAL,
-		ornate = true,
-		ornateQuality = ITEM_QUALITY_MAGIC,
-		whiteZeroValue = false,
-		keepIntricate = true,
-		keepIntricateIfNotMaxed = false,
-		keepResearchable = true,
-		keepNirnhoned = true,
-		keepSetItems = true,
-		keepRareStyle = false,
-		keepMaelAndMast = true,
-		keepLevel = 1,
-		keepLevelOrnate = false,
-		--jewels
-		notraitJewels = false,
-		jewelsEnabled = false,
-		jewelsQuality = ITEM_QUALITY_NORMAL,
-		jewelsOrnate = true,
-		jewelsOrnateQuality = ITEM_QUALITY_MAGIC,
-        keepIntricateJewels = true,
-		keepIntricateJewelsIfNotMaxed = false,
-        keepResearchableJewels = true,
-		keepJewelsSetItems = true,
-		jewelsSetQuality = ITEM_QUALITY_MAGIC,
+		--weapons/armors
+		wa = {
+			notrait = false,
+			notraitQuality = ITEM_QUALITY_NORMAL,
+			enabled = false,
+			equipmentQuality = ITEM_QUALITY_NORMAL,
+			ornate = true,
+			ornateQuality = ITEM_QUALITY_MAGIC,
+			whiteZeroValue = false,
+			keepIntricate = true,
+			keepIntricateIfNotMaxed = false,
+			keepResearchable = true,
+			keepSetItems = true,
+			keepLevel = 1,
+			keepLevelOrnate = false,
+			
+			keepNirnhoned = true,
+			keepArenaWeapons = true,
+			keepMonsterSets = true,
+			
+			keepBG = true,
+			keepCrafted = true,
+			keepCyro = true,
+			keepDungeon = true,
+			keepIC = true,
+			keepOverland = true,
+			keepSpecial = true,
+			keepTrial = true,
+			
+			disguises = false,
+			disguisesDestroy = false,
+			
+		},
+		--jewelry
+		j = {
+			notrait = false,
+			notraitQuality = ITEM_QUALITY_NORMAL,
+			enabled = false,
+			equipmentQuality = ITEM_QUALITY_NORMAL,
+			ornate = true,
+			ornateQuality = ITEM_QUALITY_MAGIC,
+			whiteZeroValue = false,
+			keepIntricate = true,
+			keepIntricateIfNotMaxed = false,
+			keepResearchable = true,
+			keepSetItems = true,
+			keepLevel = 1,
+			keepLevelOrnate = false,
+
+			keepDRandIC = true,			
+			
+			keepBG = true,
+			keepCrafted = true,
+			keepCyro = true,
+			keepDungeon = true,
+			keepIC = true,
+			keepOverland = true,
+			keepSpecial = true,
+			keepTrial = true,
+		},
 	},
 	--crafting materials
 	crafting = {
@@ -104,10 +139,24 @@ local defaults = {
 		excludeRareAdditives = true,
 		fullStack = false,
 	},
+	--furnishing
+	furnishing = {
+		alchResin = false,
+		bast = false,
+		cleanPelt = false,
+		decWax = false,
+		heartwood = false,
+		mundRune = false,
+		ochre = false,
+		regulus = false,
+	},
 	--glyphs
 	glyphs = false,
 	glyphsQuality = ITEM_QUALITY_NORMAL,
 	keepLevelGlyphs = 1,
+	--jewelry master writs 
+	jewelryMasterWrits = false,
+	jewelryMasterWritsQuality = ITEM_QUALITY_ARCANE,
 	--food/drink
 	foodAll = false,
 	foodQuality = ITEM_QUALITY_NORMAL,
@@ -129,6 +178,64 @@ local defaults = {
 		enchantingAspect = false,
 		aspectQuality = ITEM_QUALITY_NORMAL,
 		aspectFullStack = false,
+		enchantingEssence = false,
+		essenceFullStack = false,
+		essenceRunes = {
+			[1] = {"45839", false}, --Dekeipa
+			[2] = {"45833", false}, --Deni
+			[3] = {"45836", false}, --Denima
+			[4] = {"45842", false}, --Deteri
+			[5] = {"68342", false}, --Hakeijo
+			[6] = {"45841", false}, --Haoko
+			[7] = {"166045", false}, --Indeko
+			[8] = {"45849", false}, --Kaderi
+			[9] = {"45837", false}, --Kuoko
+			[10] = {"45848", false}, --Makderi
+			[11] = {"45832", false}, --Makko
+			[12] = {"45835", false}, --Makkoma
+			[13] = {"45840", false}, --Meip
+			[14] = {"45831", false}, --Oko
+			[15] = {"45834", false}, --Okoma
+			[16] = {"45843", false}, --Okori
+			[17] = {"45846", false}, --Oru
+			[18] = {"45838", false}, --Rakeipa
+			[19] = {"45847", false}, --Taderi
+		},
+		enchantingPotency = false,
+		potencyFullStack = false,
+		potencyRunes = {
+			[1] = {"45812", false}, --Dekeipa
+			[2] = {"45814", false}, --Derado
+			[3] = {"45822", false}, --Edode
+			[4] = {"45809", false}, --Edora
+			[5] = {"45825", false}, --Hade
+			[6] = {"45826", false}, --Idode
+			[7] = {"68340", false}, --Itade
+			[8] = {"45810", false}, --Jaera
+			[9] = {"45821", false}, --Jayde
+			[10] = {"64508", false}, --Jehade
+			[11] = {"45806", false}, --Jejora
+			[12] = {"45857", false}, --Jera
+			[13] = {"45855", false}, --Jora
+			[14] = {"45828", false}, --Kedeko
+			[15] = {"45830", false}, --Kude
+			[16] = {"45816", false}, --Kura
+			[17] = {"45818", false}, --Notade
+			[18] = {"45819", false}, --Ode
+			[19] = {"45807", false}, --Odra
+			[20] = {"45827", false}, --Pode
+			[21] = {"45823", false}, --Pojode
+			[22] = {"45508", false}, --Pojora
+			[23] = {"45811", false}, --Pora
+			[24] = {"45856", false}, --Porade
+			[25] = {"45829", false}, --Rede
+			[26] = {"64509", false}, --Rejera
+			[27] = {"45824", false}, --Rekude
+			[28] = {"45815", false}, --Rekura
+			[29] = {"68341", false}, --Repora
+			[30] = {"45813", false}, --Rera
+			[31] = {"45820", false}, --Tade
+		}
 	},
 	--potions
 	potions = false,
@@ -150,6 +257,9 @@ local defaults = {
 	-- treasure maps
 	treasureMaps = false,
 	treasureMapsDestroy = false,
+	-- museum pieces
+	museumPieces = false,
+	museumPiecesDestroy = false,
 	--style
 	styleMaterial = {
 		["33252"] = false, --Adamantite (Altmer)
@@ -277,11 +387,26 @@ local defaults = {
 	housingRecipesQuality = ITEM_QUALITY_NORMAL,
 	junkKeybind = false,
 	destroyKeybind = false,
+	--continuos scan mode
+	automaticScan = true,
+	--bursar of tributes quest giver cwcs
+	bot = 1,
 }
 
 -- Local functions ------------------------------------------------------------
 local function MyPrint(message)
 	CHAT_SYSTEM:AddMessage(message)
+end
+
+local function SplitString (inputstr, sep)
+        if sep == nil then
+                sep = "%s"
+        end
+        local t={}
+        for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+                table.insert(t, str)
+        end
+        return t
 end
 
 local function CanGemifyItem(bagId, slotIndex)
@@ -290,6 +415,18 @@ local function CanGemifyItem(bagId, slotIndex)
       return gemsAwarded > 0 and itemsRequired > 0
    end
    return false
+end
+
+local function GetEssenceRule(itemId)
+   for i, k in ipairs(Dustman.GetSettings().enchanting.essenceRunes) do 
+      if k[1]==itemId then return k[2] end 
+   end
+end
+
+local function GetPotencyRule(itemId)
+   for i, k in ipairs(Dustman.GetSettings().enchanting.potencyRunes) do 
+      if k[1]==itemId then return k[2] end 
+   end
 end
 
 local function BuildUsableIngredientsList()
@@ -431,7 +568,7 @@ local function SellJunkItems(isFence)
 							if sellsUsed == totalSells then
 								ZO_Alert(UI_ALERT_CATEGORY_ALERT, SOUNDS.NEGATIVE_CLICK, GetString("SI_STOREFAILURE", STORE_FAILURE_AT_FENCE_LIMIT))
 								if total > 0 and Dustman.GetSettings().notifications.total then
-									MyPrint(zo_strformat(DUSTMAN_FORMAT_TOTAL, count, total))
+									MyPrint(zo_strformat(DUSTMAN_FORMAT_TOTAL, count, total, transactions))
 								end
 								return
 							end
@@ -472,7 +609,7 @@ local function SellJunkItems(isFence)
 		end
 		
 		if total > 0 and Dustman.GetSettings().notifications.total then
-			MyPrint(zo_strformat(DUSTMAN_FORMAT_TOTAL, count, total))
+			MyPrint(zo_strformat(DUSTMAN_FORMAT_TOTAL, count, total, transactions))
 		end
 		
 	end
@@ -535,21 +672,23 @@ local function LaunderingItem(bagCache)
 	
 end
 
-local function HandleJunk(bagId, slotId, itemLink, sellPrice, forceDestroy, ruleName, itemCode)
+local function HandleJunk(bagId, slotId, itemLink, sellPrice, forceDestroy, ruleName, itemCode, special)
 
 	if Dustman.GetSettings().destroy or forceDestroy then
 		local destroy = false
 		if forceDestroy then
 			destroy = true
 		else
-			local quality = GetItemLinkQuality(itemLink)
-			local isStolen = IsItemLinkStolen(itemLink)
+			if not special then
+				local quality = GetItemLinkQuality(itemLink)
+				local isStolen = IsItemLinkStolen(itemLink)
 
-			local _, maxStack = GetSlotStackSize(bagId, slotId)
-			if isStolen then
-				destroy = quality <= Dustman.GetSettings().destroyStolenQuality and (sellPrice <= Dustman.GetSettings().destroyStolenValue and ((not Dustman.GetSettings().destroyExcludeStackable) or (Dustman.GetSettings().destroyExcludeStackable and maxStack <= 1)))
-			else
-				destroy = quality <= Dustman.GetSettings().destroyQuality and (sellPrice == 0 or (sellPrice <= Dustman.GetSettings().destroyValue and ((not Dustman.GetSettings().destroyExcludeStackable) or (Dustman.GetSettings().destroyExcludeStackable and maxStack <= 1))))
+				local _, maxStack = GetSlotStackSize(bagId, slotId)
+				if isStolen then
+					destroy = quality <= Dustman.GetSettings().destroyStolenQuality and (sellPrice <= Dustman.GetSettings().destroyStolenValue and ((not Dustman.GetSettings().destroyExcludeStackable) or (Dustman.GetSettings().destroyExcludeStackable and maxStack <= 1)))
+				else
+					destroy = quality <= Dustman.GetSettings().destroyQuality and (sellPrice == 0 or (sellPrice <= Dustman.GetSettings().destroyValue and ((not Dustman.GetSettings().destroyExcludeStackable) or (Dustman.GetSettings().destroyExcludeStackable and maxStack <= 1))))
+				end
 			end
 		end
 
@@ -581,9 +720,120 @@ local function HandleJunk(bagId, slotId, itemLink, sellPrice, forceDestroy, rule
 	
 end
 
+
+local function saveBotItemsForQuest(id,itemLink,bagId,slotId)
+	if id==0 then 
+		return false
+	elseif id==1 then --"A Matter of Tributes" quest
+		--5 Cosmetics and Grooming Items
+		--d("5 Cosmetics and Grooming Items")
+		local count = GetItemLinkNumItemTags(itemLink)
+		for i = 1, count do
+			local text, cat = GetItemLinkItemTagInfo(itemLink, i)
+			--d("text: "..text)
+			if cat == TAG_CATEGORY_TREASURE_TYPE then
+				if text == GetString(DUSTMAN_BOT_COSMETIC) or text == GetString(DUSTMAN_BOT_GROOMING_ITEMS) then 
+					--d("ret true")
+					return true
+				end
+			end
+		end
+	elseif id==2 then --"A Matter of Respect" quest
+		--5 utensils, drinkware, dishes or cookware
+		--d("5 utensils, drinkware, dishes or cookware")
+		local count = GetItemLinkNumItemTags(itemLink)
+		for i = 1, count do
+			local text, cat = GetItemLinkItemTagInfo(itemLink, i)
+			--d("text: "..text)
+			if cat == TAG_CATEGORY_TREASURE_TYPE then
+				if text == GetString(DUSTMAN_BOT_UTENSILS) or text == GetString(DUSTMAN_BOT_DAC) or text == GetString(DUSTMAN_BOT_DRINKWARE) then 
+					--d("ret true")
+					return true
+				end
+			end
+		end
+	elseif id==3 then --"A Matter of Leisure" quest
+		--5 toys, dolls or games
+		--d("5 toys, dolls or games")
+		local count = GetItemLinkNumItemTags(itemLink)
+		for i = 1, count do
+			local text, cat = GetItemLinkItemTagInfo(itemLink, i)
+			--d("text: "..text)
+			if cat == TAG_CATEGORY_TREASURE_TYPE then
+				if text == GetString(DUSTMAN_BOT_CT) or text == GetString(DUSTMAN_BOT_DOLLS) or text == GetString(DUSTMAN_BOT_GAMES) then 
+					--d("ret true")
+					return true
+				end
+			end
+		end
+	elseif id==4 then --"Glitter and Gleam" quest
+		--3 pieces of armor with the ornate trait		
+		--d("3 pieces of armor with the ornate trait")
+		itemType, _ = GetItemLinkItemType(itemLink)
+		if itemType == ITEMTYPE_ARMOR then
+			if GetItemTrait(bagId, slotId) == ITEM_TRAIT_TYPE_ARMOR_ORNATE then 
+				--d("ret true")
+				return true
+			end
+		end
+	elseif id==5 then --"Morsels and Pecks" quest
+		--2 Elemental Essence, 3 Supple Roots, 3 Ectoplasm
+		--d("2 Elemental Essence, 3 Supple Roots, 3 Ectoplasm")
+		itemId = select(4, ZO_LinkHandler_ParseLink(itemLink))
+		if itemId=="54385" or itemId=="54388" or itemId=="54384" then
+			--d("ret true")
+			return true
+		end
+	elseif id==6 then --"Nibbles and Bits" quest
+		--4 Carapaces, 3 Foul Hide, 5 Daedra Husks
+		--d("4 Carapaces, 3 Foul Hide, 5 Daedra Husks")
+		if itemId=="54382" or itemId=="54381" or itemId=="54383" then
+			--d("ret true")
+			return true
+		end
+	end
+	--d("ret false")
+	return false
+end
+
+local function saveAllBotItems(itemLink,bagId,slotId)
+	res = false
+	for i=1,6 do 
+		res = res or saveBotItemsForQuest(i,itemLink,bagId,slotId)	
+	end
+	return res
+end
+
+local function botItems(itemLink, bagId, slotId)
+	
+	--d("BOT: "..tostring(Dustman.GetSettings().bot))
+	if Dustman.GetSettings().bot == 1 then return false end
+	
+	if Dustman.GetSettings().bot == 2 then		
+		return saveAllBotItems(itemLink,bagId,slotId)	
+	else
+		local id = 0
+		for questIndex = 1, MAX_JOURNAL_QUESTS do
+			questName = GetJournalQuestName(questIndex)
+			if questName == GetString(DUSTMAN_BOT_QUEST_NAME_1) then id=1
+				elseif questName == GetString(DUSTMAN_BOT_QUEST_NAME_2) then id=2
+				elseif questName == GetString(DUSTMAN_BOT_QUEST_NAME_3) then id=3
+				elseif questName == GetString(DUSTMAN_BOT_QUEST_NAME_4) then id=4
+				elseif questName == GetString(DUSTMAN_BOT_QUEST_NAME_5) then id=5
+				elseif questName == GetString(DUSTMAN_BOT_QUEST_NAME_6) then id=6
+			end
+		end
+		return saveBotItemsForQuest(id,itemLink,bagId,slotId)
+	end
+end
+
 -- Event handlers -------------------------------------------------------------
 local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
-
+	
+	if not Dustman.GetSettings().automaticScan then 
+		if not requestedScan then return end
+	end
+	
 	local junked={}
 	if Dustman.savedVars.useGlobalSettings then
 		junked = globalMarkedAsJunk
@@ -597,14 +847,14 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 	if BankManagerRevived_inProgress and BankManagerRevived_inProgress() then return end --support for BankManagerRevived
 	
 	local _, stackCount, sellPrice, _, _, equipType, itemStyle, quality = GetItemInfo(bagId, slotId)
-	
 	if stackCount < 1 then return end -- empty slot	
 	local itemLink = GetItemLink(bagId, slotId)
 	local itemType, specializedItemType = GetItemLinkItemType(itemLink)
 	local itemId = select(4, ZO_LinkHandler_ParseLink(itemLink))
 	local level = GetItemLevel(bagId, slotId)
-
-
+	
+	--priority 0: items from bursar of tributes cwc quest giver
+	if botItems(itemLink, bagId, slotId) then return end
 	
 	local dontLaunder
 	-- Stolen item to do not launder, not in the main block because it must be re-evaluated.
@@ -643,9 +893,41 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 		end
 	end
     
+	--furninshing materials
+	if Dustman.GetSettings().furnishing.alchResin and specializedItemType == SPECIALIZED_ITEMTYPE_FURNISHING_MATERIAL_ALCHEMY then
+		HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ALCHEMICAL RESIN")
+        return
+	end
+	if specializedItemType == SPECIALIZED_ITEMTYPE_FURNISHING_MATERIAL_CLOTHIER then
+		if Dustman.GetSettings().furnishing.bast and itemId == "114890" then HandleJunk(bagId, slotId, itemLink, sellPrice, false, "BAST") end
+		if Dustman.GetSettings().furnishing.cleanPelt and itemId == "114891" then HandleJunk(bagId, slotId, itemLink, sellPrice, false, "CLEAN PELT") end
+		return
+	end
+	if Dustman.GetSettings().furnishing.decWax and specializedItemType == SPECIALIZED_ITEMTYPE_FURNISHING_MATERIAL_PROVISIONING then
+		HandleJunk(bagId, slotId, itemLink, sellPrice, false, "DECORATIVE WAX")
+        return
+	end
+	if Dustman.GetSettings().furnishing.heartwood and specializedItemType == SPECIALIZED_ITEMTYPE_FURNISHING_MATERIAL_WOODWORKING then
+		HandleJunk(bagId, slotId, itemLink, sellPrice, false, "HEARTWOOD")
+        return
+	end
+	if Dustman.GetSettings().furnishing.mundRune and specializedItemType == SPECIALIZED_ITEMTYPE_FURNISHING_MATERIAL_ENCHANTING then
+		HandleJunk(bagId, slotId, itemLink, sellPrice, false, "MUNDUS RUNE")
+        return
+	end
+	if Dustman.GetSettings().furnishing.ochre and specializedItemType == SPECIALIZED_ITEMTYPE_FURNISHING_MATERIAL_JEWELRYCRAFTING then
+		HandleJunk(bagId, slotId, itemLink, sellPrice, false, "OCHRE")
+        return
+	end
+	if Dustman.GetSettings().furnishing.regulus and specializedItemType == SPECIALIZED_ITEMTYPE_FURNISHING_MATERIAL_BLACKSMITHING then
+		HandleJunk(bagId, slotId, itemLink, sellPrice, false, "REGULUS")
+        return
+	end
+	
     --daily login items
-    if not IsItemFromCrownCrate(bagId, slotId) then
-        if Dustman.GetSettings().dailyLoginFood and itemType==ITEMTYPE_FOOD and string.find(string.upper(GetItemLinkName(itemLink)), GetString(DUSTMAN_CROWN)) then
+    if not IsItemFromCrownCrate(bagId, slotId) and GetItemBindType(bagId, slotId) ~= BIND_TYPE_NONE then --the second check is to delete only bound potions (to introduce compatibility with Crafted potions addon)
+
+		if Dustman.GetSettings().dailyLoginFood and itemType==ITEMTYPE_FOOD and string.find(string.upper(GetItemLinkName(itemLink)), GetString(DUSTMAN_CROWN)) then
             HandleJunk(bagId, slotId, itemLink, sellPrice, true, "DL FOOD")
             return
         end
@@ -675,9 +957,17 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
             return
         end
 	end
-    
+	
+	--jewelry master writs
+	if itemType == ITEMTYPE_MASTER_WRIT and Dustman.GetSettings().jewelryMasterWrits and quality <= Dustman.GetSettings().jewelryMasterWritsQuality then
+		if SplitString(itemLink,':')[9]=='24' or SplitString(itemLink,':')[9]=='18' then --filtering jewelry writs -> 18: necklace 24: ring
+			HandleJunk(bagId, slotId, itemLink, sellPrice, true, "JEWELRY MASTER WRIT")
+			return
+        end
+	end
+	
     if quality == ITEM_QUALITY_LEGENDARY then return end
-    
+   
 	-- stolen clothes
 	if Dustman.GetSettings().excludeStolenClothes and itemType == ITEMTYPE_ARMOR and GetItemLinkArmorType(itemLink) == ARMORTYPE_NONE and
 	equipType ~= EQUIP_TYPE_NECK and equipType ~= EQUIP_TYPE_RING and equipType ~= EQUIP_TYPE_COSTUME and equipType ~= EQUIP_TYPE_INVALID then
@@ -768,10 +1058,28 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 	--treasure maps
 	elseif Dustman.GetSettings().treasureMaps and itemType == ITEMTYPE_TROPHY and specializedItemType == SPECIALIZED_ITEMTYPE_TROPHY_TREASURE_MAP then
 		if Dustman.GetSettings().treasureMapsDestroy then
-			HandleJunk(bagId, slotId, itemLink, sellPrice, true, "TREASURE MAP")
+			HandleJunk(bagId, slotId, itemLink, sellPrice, true, "TREASURE MAP",false,true)
 			return
 		else
-			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "TREASURE MAP")
+			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "TREASURE MAP",false,true)
+			return
+		end
+	--museum pieces
+	elseif Dustman.GetSettings().museumPieces and itemType == ITEMTYPE_TROPHY and specializedItemType == SPECIALIZED_ITEMTYPE_TROPHY_MUSEUM_PIECE then
+		if Dustman.GetSettings().museumPiecesDestroy then
+			HandleJunk(bagId, slotId, itemLink, sellPrice, true, "MUSEUM PIECE",false,true)
+			return
+		else
+			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "MUSEUM PIECE",false,true)
+			return
+		end
+	--disguises
+	elseif Dustman.GetSettings().equipment.wa.disguises and itemType == ITEMTYPE_DISGUISE then
+		if Dustman.GetSettings().equipment.wa.disguisesDestroy then
+			HandleJunk(bagId, slotId, itemLink, sellPrice, true, "DISGUISE",false,true)
+			return
+		else
+			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "DISGUISE",false,true)
 			return
 		end
 	--equipable items
@@ -779,149 +1087,265 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 		
 		--exclude crafted items
 		if IsItemLinkCrafted(itemLink) then return end
-
+		
+		--exclude companion items
+		if GetItemActorCategory(bagId, slotId) == GAMEPLAY_ACTOR_CATEGORY_COMPANION then return end
+		
 		local trait = GetItemTrait(bagId, slotId)
 		local isResearchable = IsItemNeededForResearch(itemLink)
 		local craftingType = LR:GetItemCraftingSkill(itemLink)
-		local isRareStyle = (craftingType ~= -1) and not Dustman.IsCommonStyle(itemStyle)
-		local isSet, setName = GetItemLinkSetInfo(itemLink, false)
+		local isSet, setName, _, _, _, setId = GetItemLinkSetInfo(itemLink, false)
 		local isNirnhoned = trait == ITEM_TRAIT_TYPE_ARMOR_NIRNHONED or trait == ITEM_TRAIT_TYPE_WEAPON_NIRNHONED
 		local requiredLevel = GetItemLinkRequiredLevel(itemLink)
 		local requiredChampionPoints = GetItemLinkRequiredChampionPoints(itemLink)
 		
 		if isNewItem and Dustman.GetSettings().notifications.found then
-			if isResearchable and Dustman.GetSettings().equipment.keepResearchable and not (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then
-				MyPrint(zo_strformat(DUSTMAN_NOTE_RESEARCH, itemLink, GetString("SI_ITEMTRAITTYPE", trait)))
-			elseif isNirnhoned and Dustman.GetSettings().equipment.keepNirnhoned then
-				MyPrint(zo_strformat(DUSTMAN_NOTE_NIRNHONED, GetString("SI_ITEMTRAITTYPE", trait), itemLink))
-			end
-            if isResearchable and Dustman.GetSettings().equipment.keepResearchableJewels and (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then
-				MyPrint(zo_strformat(DUSTMAN_NOTE_RESEARCH, itemLink, GetString("SI_ITEMTRAITTYPE", trait)))
-            end
-			if isRareStyle and Dustman.GetSettings().equipment.keepRareStyle then
-				MyPrint(zo_strformat(DUSTMAN_NOTE_RARESTYLE, itemLink, GetItemStyleName(itemStyle)))
-			end
-			if isSet and Dustman.GetSettings().equipment.keepSetItems and not (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then
-				MyPrint(zo_strformat(DUSTMAN_NOTE_SETITEM, itemLink, setName))
-			end
-			if isSet and Dustman.GetSettings().equipment.keepJewelsSetItems and (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then
-				MyPrint(zo_strformat(DUSTMAN_NOTE_SETITEM, itemLink, setName))
+			if equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING then
+				if isResearchable and Dustman.GetSettings().equipment.j.keepResearchable then
+					MyPrint(zo_strformat(DUSTMAN_NOTE_RESEARCH, itemLink, GetString("SI_ITEMTRAITTYPE", trait)))
+				end
+				if isSet and Dustman.GetSettings().equipment.j.keepSetItems then
+					MyPrint(zo_strformat(DUSTMAN_NOTE_SETITEM, itemLink, setName))
+				end
+			else
+				if isResearchable and Dustman.GetSettings().equipment.wa.keepResearchable then
+					MyPrint(zo_strformat(DUSTMAN_NOTE_RESEARCH, itemLink, GetString("SI_ITEMTRAITTYPE", trait)))
+				elseif isNirnhoned and Dustman.GetSettings().equipment.wa.keepNirnhoned then
+					MyPrint(zo_strformat(DUSTMAN_NOTE_NIRNHONED, GetString("SI_ITEMTRAITTYPE", trait), itemLink))
+				end
+				if isSet and Dustman.GetSettings().equipment.wa.keepSetItems then
+					MyPrint(zo_strformat(DUSTMAN_NOTE_SETITEM, itemLink, setName))
+				end
 			end
 		end
         
-        -- Maelstrom's and Master's Weapons
-		if Dustman.GetSettings().equipment.keepMaelAndMast then
-			if string.find(string.upper(GetItemLinkName(itemLink)), GetString(DUSTMAN_MASTER)) or string.find(string.upper(GetItemLinkName(itemLink)), GetString(DUSTMAN_MAELSTROM)) then
+		
+		--jewelry
+		if equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING then
+			--EXCLUDE PART
+			--exclude researchable jewels
+			if isResearchable and Dustman.GetSettings().equipment.j.keepResearchable then return end
+			
+			--exclude items with a specific trait
+			if Dustman.GetSettings().equipment.j.enabled and quality <= Dustman.GetSettings().equipment.j.equipmentQuality and (not isSet or Dustman.GetSettings().junkTraitSets) then
+				if not ((Dustman.GetSettings().equipment.j.keepLevel > 1 and requiredLevel >= Dustman.GetSettings().equipment.j.keepLevel) or (Dustman.GetSettings().equipment.j.keepLevel > 1 and requiredChampionPoints and requiredChampionPoints + 10000 >= Dustman.GetSettings().equipment.j.keepLevel)) then
+					if Dustman.GetSettings().itemTraits[trait] then
+						HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ITEM-TRAIT J")
+						return
+					end
+				end
+			end
+			
+			--exclude set jewels
+			if isSet and Dustman.GetSettings().equipment.j.keepSetItems then return end
+			
+			--specific set types check
+			if LS.checkIfSetsAreLoadedProperly() and isSet then
+				
+				--Battleground sets
+				if Dustman.GetSettings().equipment.j.keepBG and LS.IsBattlegroundSet(setId) then return end
+				
+				--Crafted sets
+				if Dustman.GetSettings().equipment.j.keepCrafted and LS.IsCraftedSet(setId) then return end
+				
+				--Cyrodill sets
+				if Dustman.GetSettings().equipment.j.keepCyro and LS.IsCyrodiilSet(setId) then return end
+				
+				--Daily random dungeon or Imperial city reward sets
+				if Dustman.GetSettings().equipment.j.keepDRandIC and LS.IsDailyRandomDungeonAndImperialCityRewardSet(setId) then return end
+				
+				--Dungeon sets
+				if Dustman.GetSettings().equipment.j.keepDungeon and LS.IsDungeonSet(setId) then return end
+				
+				--IC sets
+				if Dustman.GetSettings().equipment.j.keepIC and LS.IsImperialCitySet(setId) then return end
+								
+				--Overland sets
+				if Dustman.GetSettings().equipment.j.keepOverland and LS.IsOverlandSet(setId) then return end
+				
+				--Special sets
+				if Dustman.GetSettings().equipment.j.keepSpecial and LS.IsSpecialSet(setId) then return end
+				
+				--Trial sets
+				if Dustman.GetSettings().equipment.j.keepTrial then
+					fromTrial,_= LS.IsTrialSet(setId) 
+					if fromTrial then return end
+				end
+	
+			end
+			
+			--exclude intricate jewelry items
+			if trait == ITEM_TRAIT_TYPE_JEWELRY_INTRICATE then
+				if Dustman.GetSettings().equipment.j.keepIntricate then
+					--only if crafting skill in not maxed
+					if Dustman.GetSettings().equipment.j.keepIntricateIfNotMaxed then
+						local _, rank = GetSkillLineInfo(GetCraftingSkillLineIndices(craftingType))
+						if rank < 50 then return end
+					else
+						return
+					end
+				end
+			end
+			
+			--MARK PART
+			--zero value items
+			if Dustman.GetSettings().equipment.j.whiteZeroValue and quality == ITEM_QUALITY_NORMAL and sellPrice == 0 then
+				HandleJunk(bagId, slotId, itemLink, sellPrice, false, "0 GOLD J")
 				return
 			end
-		end
+			--and then exclude items based on level/vetrank. 10000 is added to cprank
+			if ((Dustman.GetSettings().equipment.j.keepLevel > 1 and requiredLevel >= Dustman.GetSettings().equipment.j.keepLevel)
+			or (Dustman.GetSettings().equipment.j.keepLevel > 1 and requiredChampionPoints and requiredChampionPoints + 10000 >= Dustman.GetSettings().equipment.j.keepLevel))
+			and (not Dustman.GetSettings().equipment.j.keepLevelOrnate or Dustman.GetSettings().equipment.j.keepLevelOrnate and trait ~= ITEM_TRAIT_TYPE_JEWELRY_ORNATE) then
+				return
+			end
+			
+			-- notrait
+			if Dustman.GetSettings().equipment.j.notrait and quality <= Dustman.GetSettings().equipment.j.notraitQuality then
+				if trait == ITEM_TRAIT_TYPE_NONE and GetItemLinkArmorType(itemLink) ~= ARMORTYPE_NONE then
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, "TRAITLESS J")
+					return
+				end
+			end
+			
+			--ornate
+			if Dustman.GetSettings().equipment.j.ornate and quality <= Dustman.GetSettings().equipment.j.ornateQuality then
+				if trait == ITEM_TRAIT_TYPE_JEWELRY_ORNATE then
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ORNATE J")
+					return
+				end
+			end
+			
+			--mark with the selected item quality
+			if Dustman.GetSettings().equipment.j.enabled and quality <= Dustman.GetSettings().equipment.j.equipmentQuality and trait ~= ITEM_TRAIT_TYPE_JEWELRY_ORNATE then
+				if LS.checkIfSetsAreLoadedProperly() and isSet then
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, string.upper(LS.GetSetTypeName(LS.GetSetType(setId))).." SET J")
+					return
+				else
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, "STD J")
+					return
+				end
+			end	
 
-        --exclude researchable armors & weapons
-		if isResearchable and Dustman.GetSettings().equipment.keepResearchable and not (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then return end
-       
-        --exclude researchable jewels
-		if isResearchable and Dustman.GetSettings().equipment.keepResearchableJewels and (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then return end
-        
-		--exclude rare style items
-		if isRareStyle and Dustman.GetSettings().equipment.keepRareStyle then return end
-		
-		-- Exclude items with a specific trait
-		if Dustman.GetSettings().equipment.enabled and quality <= Dustman.GetSettings().equipment.equipmentQuality and (not isSet or Dustman.GetSettings().junkTraitSets) then
-			if not ((Dustman.GetSettings().equipment.keepLevel > 1 and requiredLevel >= Dustman.GetSettings().equipment.keepLevel) or (Dustman.GetSettings().equipment.keepLevel > 1 and requiredChampionPoints and requiredChampionPoints + 10000 >= Dustman.GetSettings().equipment.keepLevel)) then
-				if Dustman.GetSettings().itemTraits[trait] then
-					HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ITEM-TRAIT")
+
+		--weapons/apparel
+		else
+			--EXCLUDE PART
+			--exclude researchable armors & weapons
+			if isResearchable and Dustman.GetSettings().equipment.wa.keepResearchable then return end
+													
+			--exclude items with Nirnhoned trait
+			if isNirnhoned and Dustman.GetSettings().equipment.wa.keepNirnhoned then return end
+			
+			--exclude items with a specific trait
+			if Dustman.GetSettings().equipment.wa.enabled and quality <= Dustman.GetSettings().equipment.wa.equipmentQuality and (not isSet or Dustman.GetSettings().junkTraitSets) then
+				if not ((Dustman.GetSettings().equipment.wa.keepLevel > 1 and requiredLevel >= Dustman.GetSettings().equipment.wa.keepLevel) or (Dustman.GetSettings().equipment.wa.keepLevel > 1 and requiredChampionPoints and requiredChampionPoints + 10000 >= Dustman.GetSettings().equipment.wa.keepLevel)) then
+					if Dustman.GetSettings().itemTraits[trait] then
+						HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ITEM-TRAIT W/A")
+						return
+					end
+				end
+			end
+			
+			--exclude set armors & weapons
+			if isSet and Dustman.GetSettings().equipment.wa.keepSetItems then return end
+			
+			--specific set types check
+			if LS.checkIfSetsAreLoadedProperly() and isSet then
+
+				--Arena Weapons (NOTE: we consider only the weapons dropping from the last chest in the arenas)
+				if Dustman.GetSettings().equipment.wa.keepArenaWeapons and LS.IsArenaSet(setId) and setId ~= 23 and setId ~= 24 and setId ~= 32 and setId ~= 88
+				and setId ~= 211 and setId ~= 212 and setId ~= 213 and setId ~= 214 and setId ~= 215 and setId ~= 216 and setId ~= 217
+					then return 
+				end
+				
+				--Battleground sets
+				if Dustman.GetSettings().equipment.wa.keepBG and LS.IsBattlegroundSet(setId) then return end
+				
+				--Crafted sets
+				if Dustman.GetSettings().equipment.wa.keepCrafted and LS.IsCraftedSet(setId) then return end
+				
+				--Cyrodill sets
+				if Dustman.GetSettings().equipment.wa.keepCyro and LS.IsCyrodiilSet(setId) then return end
+				
+				--Daily random dungeon or Imperial city reward sets
+				if Dustman.GetSettings().equipment.wa.keepDRandIC and LS.IsDailyRandomDungeonAndImperialCityRewardSet(setId) then return end
+				
+				--Dungeon sets
+				if Dustman.GetSettings().equipment.wa.keepDungeon and LS.IsDungeonSet(setId) then return end
+				
+				--IC sets
+				if Dustman.GetSettings().equipment.wa.keepIC and LS.IsImperialCitySet(setId) then return end
+				
+				--Monster sets
+				if Dustman.GetSettings().equipment.wa.keepMonsterSets and LS.IsMonsterSet(setId) then return end
+				
+				--Overland sets
+				if Dustman.GetSettings().equipment.wa.keepOverland and LS.IsOverlandSet(setId) then return end
+				
+				--Special sets
+				if Dustman.GetSettings().equipment.wa.keepSpecial and LS.IsSpecialSet(setId) then return end
+				
+				--Trial sets
+				if Dustman.GetSettings().equipment.wa.keepTrial then
+					fromTrial,_= LS.IsTrialSet(setId) 
+					if fromTrial then return end
+				end
+			
+			end
+			
+			--exclude intricate items
+			if trait == ITEM_TRAIT_TYPE_ARMOR_INTRICATE or trait == ITEM_TRAIT_TYPE_WEAPON_INTRICATE then
+				if Dustman.GetSettings().equipment.wa.keepIntricate then
+					--only if crafting skill in not maxed
+					if Dustman.GetSettings().equipment.wa.keepIntricateIfNotMaxed then
+						local _, rank = GetSkillLineInfo(GetCraftingSkillLineIndices(craftingType))
+						if rank < 50 then return end
+					else
+						return
+					end
+				end
+			end
+			
+			--MARK PART
+			--zero value items
+			if Dustman.GetSettings().equipment.wa.whiteZeroValue and quality == ITEM_QUALITY_NORMAL and sellPrice == 0 then
+				HandleJunk(bagId, slotId, itemLink, sellPrice, false, "0 GOLD W/A")
+				return
+			end
+			--and then exclude items based on level/vetrank. 10000 is added to cprank
+			if ((Dustman.GetSettings().equipment.wa.keepLevel > 1 and requiredLevel >= Dustman.GetSettings().equipment.wa.keepLevel)
+			or (Dustman.GetSettings().equipment.wa.keepLevel > 1 and requiredChampionPoints and requiredChampionPoints + 10000 >= Dustman.GetSettings().equipment.wa.keepLevel))
+			and (not Dustman.GetSettings().equipment.wa.keepLevelOrnate or Dustman.GetSettings().equipment.wa.keepLevelOrnate and (trait ~= ITEM_TRAIT_TYPE_ARMOR_ORNATE and trait ~= ITEM_TRAIT_TYPE_WEAPON_ORNATE)) then
+				return
+			end
+			
+			-- notrait
+			if Dustman.GetSettings().equipment.wa.notrait and quality <= Dustman.GetSettings().equipment.wa.notraitQuality then
+				if trait == ITEM_TRAIT_TYPE_NONE and (GetItemLinkArmorType(itemLink) ~= ARMORTYPE_NONE or GetItemLinkWeaponType(itemLink) ~= WEAPONTYPE_NONE) then
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, "TRAITLESS W/A")
 					return
 				end
 			end
-		end
-		
-		--exclude set armors & weapons
-		if isSet and Dustman.GetSettings().equipment.keepSetItems and not (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then return end
-		
-		--exclude set jewels
-		if isSet and Dustman.GetSettings().equipment.keepJewelsSetItems and (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) and quality >= Dustman.GetSettings().equipment.jewelsSetQuality then return end
-		
-		--exclude items with Nirnhoned trait
-		if isNirnhoned and Dustman.GetSettings().equipment.keepNirnhoned then return end
-		
-		--exclude intricate armors & weapons
-		if trait == ITEM_TRAIT_TYPE_ARMOR_INTRICATE or trait == ITEM_TRAIT_TYPE_WEAPON_INTRICATE then
-			if Dustman.GetSettings().equipment.keepIntricate then
-				--only if crafting skill in not maxed
-				if Dustman.GetSettings().equipment.keepIntricateIfNotMaxed then
-					local _, rank = GetSkillLineInfo(GetCraftingSkillLineIndices(craftingType))
-					if rank < 50 then return end
+			
+			--ornate
+			if Dustman.GetSettings().equipment.wa.ornate and quality <= Dustman.GetSettings().equipment.wa.ornateQuality then
+				if trait == ITEM_TRAIT_TYPE_ARMOR_ORNATE or trait == ITEM_TRAIT_TYPE_WEAPON_ORNATE then
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ORNATE W/A")
+					return
+				end
+			end
+			
+			--mark with the selected item quality
+			if Dustman.GetSettings().equipment.wa.enabled and quality <= Dustman.GetSettings().equipment.wa.equipmentQuality and (trait ~= ITEM_TRAIT_TYPE_ARMOR_ORNATE and trait ~= ITEM_TRAIT_TYPE_WEAPON_ORNATE) then
+				if LS.checkIfSetsAreLoadedProperly() and isSet then
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, string.upper(LS.GetSetTypeName(LS.GetSetType(setId))).." SET W/A")
+					return
 				else
+					HandleJunk(bagId, slotId, itemLink, sellPrice, false, "STD W/A")
 					return
 				end
-			end
-		end
-        
-        --exclude intricate jewelry items
-		if trait == ITEM_TRAIT_TYPE_JEWELRY_INTRICATE then
-			if Dustman.GetSettings().equipment.keepIntricateJewels then
-				--only if crafting skill in not maxed
-				if Dustman.GetSettings().equipment.keepIntricateJewelsIfNotMaxed then
-					local _, rank = GetSkillLineInfo(GetCraftingSkillLineIndices(craftingType))
-					if rank < 50 then return end
-				else
-					return
-				end
-			end
-		end
-		
-		--zero value items
-		if Dustman.GetSettings().equipment.whiteZeroValue and quality == ITEM_QUALITY_NORMAL and sellPrice == 0 then
-			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "0 GOLD")
-			return
-		end
-		
-		if ( not (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) ) then
-			--exclude items based on level/vetrank. 10000 is added to cprank
-			if ((Dustman.GetSettings().equipment.keepLevel > 1 and requiredLevel >= Dustman.GetSettings().equipment.keepLevel)
-			or (Dustman.GetSettings().equipment.keepLevel > 1 and requiredChampionPoints and requiredChampionPoints + 10000 >= Dustman.GetSettings().equipment.keepLevel))
-			and (not Dustman.GetSettings().equipment.keepLevelOrnate or Dustman.GetSettings().equipment.keepLevelOrnate and (trait ~= ITEM_TRAIT_TYPE_ARMOR_ORNATE and trait ~= ITEM_TRAIT_TYPE_WEAPON_ORNATE)) then
-				return
-			end
-		end
-		
-		-- notrait
-		if Dustman.GetSettings().equipment.notrait and quality <= Dustman.GetSettings().equipment.notraitQuality then
-			if trait == ITEM_TRAIT_TYPE_NONE and (GetItemLinkArmorType(itemLink) ~= ARMORTYPE_NONE or GetItemLinkWeaponType(itemLink) ~= WEAPONTYPE_NONE) then
-				HandleJunk(bagId, slotId, itemLink, sellPrice, false, "TRAITLESS ITEM")
-				return
-			end
-		end
-		-- notrait jewels
-		if Dustman.GetSettings().equipment.notraitJewels then
-			if trait == ITEM_TRAIT_TYPE_NONE and GetItemLinkArmorType(itemLink) == ARMORTYPE_NONE and (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then
-				HandleJunk(bagId, slotId, itemLink, sellPrice, false, "TRAITLESS JEWEL")
-				return
-			end
-		end
-		--ornate weapons & armor
-		if Dustman.GetSettings().equipment.ornate and quality <= Dustman.GetSettings().equipment.ornateQuality then
-			if trait == ITEM_TRAIT_TYPE_ARMOR_ORNATE or trait == ITEM_TRAIT_TYPE_WEAPON_ORNATE then
-				HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ORNATE ITEM")
-				return
-			end
-		end
-		--ornate jewels
-		if Dustman.GetSettings().equipment.jewelsOrnate and quality <= Dustman.GetSettings().equipment.jewelsOrnateQuality then
-			if trait == ITEM_TRAIT_TYPE_JEWELRY_ORNATE then
-				HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ORNATE JEWEL")
-				return
-			end
-		end
-		--mark weapons & armor with the selected item quality
-		if Dustman.GetSettings().equipment.enabled and quality <= Dustman.GetSettings().equipment.equipmentQuality and not (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then
-			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "STD ITEM")
-			return
-		end		
-		--mark jewels with the selected item quality
-		if Dustman.GetSettings().equipment.jewelsEnabled and quality <= Dustman.GetSettings().equipment.jewelsQuality and (equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING) then
-			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "STD JEWEL")
-			return
+			end	
 		end
 	--fishing lure
 	elseif itemType == ITEMTYPE_LURE then
@@ -948,19 +1372,18 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "HOUSING RECIPE")
 			return
 		end
-	--collected fish & collected trophies
+	--collected fish & collected trophies & museum pieces
 	elseif itemType == ITEMTYPE_COLLECTIBLE then
 		
 		if specializedItemType == SPECIALIZED_ITEMTYPE_COLLECTIBLE_MONSTER_TROPHY and Dustman.GetSettings().trophies then
 			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "TROPHY")
 			return
-		 end
+		end
 		 
 		if specializedItemType == SPECIALIZED_ITEMTYPE_COLLECTIBLE_RARE_FISH and Dustman.GetSettings().trophy then
 			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "FISH TROPHY")
 			return
-		 end
-		 
+		end 
 	--provisioning ingredients
 	elseif itemType == ITEMTYPE_INGREDIENT then
 		local recipeType, ingredientType = Dustman.GetIngredientInfo(itemId)
@@ -1003,6 +1426,16 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 	elseif itemType == ITEMTYPE_ENCHANTING_RUNE_ASPECT and quality <= Dustman.GetSettings().enchanting.aspectQuality then 
 		if Dustman.GetSettings().enchanting.enchantingAspect and (not Dustman.GetSettings().enchanting.aspectFullStack or (Dustman.GetSettings().enchanting.aspectFullStack and IsFullStackInBag(slotId, BAG_BANK, itemLink))) then
 			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ASPECT RUNE")
+			return
+		end
+	elseif itemType == ITEMTYPE_ENCHANTING_RUNE_ESSENCE and GetEssenceRule(itemId) then 
+		if Dustman.GetSettings().enchanting.enchantingEssence and (not Dustman.GetSettings().enchanting.essenceFullStack or (Dustman.GetSettings().enchanting.essenceFullStack and IsFullStackInBag(slotId, BAG_BANK, itemLink))) then
+			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "ESSENCE RUNE")
+			return
+		end
+	elseif itemType == ITEMTYPE_ENCHANTING_RUNE_POTENCY and GetPotencyRule(itemId) then 
+		if Dustman.GetSettings().enchanting.enchantingPotency and (not Dustman.GetSettings().enchanting.potencyFullStack or (Dustman.GetSettings().enchanting.potencyFullStack and IsFullStackInBag(slotId, BAG_BANK, itemLink))) then
+			HandleJunk(bagId, slotId, itemLink, sellPrice, false, "POTENCY RUNE")
 			return
 		end
 	elseif itemType == ITEMTYPE_SOUL_GEM and quality == ITEM_QUALITY_NORMAL and Dustman.GetSettings().emptyGems then 
@@ -1113,10 +1546,12 @@ local function GetJunkSettings()
 end
 
 function Dustman.Sweep()
+	requestedScan = true
 	local bagSize = GetBagSize(BAG_BACKPACK)
 	for slotIndex = 0, bagSize - 1 do
 		OnInventorySingleSlotUpdate(nil, BAG_BACKPACK, slotIndex, false)
 	end
+	requestedScan = false
 end
 
 function Dustman.ClearMarkedAsJunk()
@@ -1282,14 +1717,27 @@ function Dustman_DestroyHoveredItem()
 end
 
 function Dustman_ExcludeSetItems()
-	Dustman.GetSettings().equipment.keepSetItems = not Dustman.GetSettings().equipment.keepSetItems
-	local to_show
-	if Dustman.GetSettings().equipment.keepSetItems then
+	Dustman.GetSettings().equipment.wa.keepSetItems = not Dustman.GetSettings().equipment.wa.keepSetItems
+	if Dustman.GetSettings().equipment.wa.keepSetItems then
 		d(GetString(DUSTMAN_SET_DISABLED))
 	else
 		d(GetString(DUSTMAN_SET_ENABLED))
 	end
 	Dustman.Sweep()
+end
+
+local function OnRemoveQuest(eventCode, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questID)
+
+	if Dustman == nil or Dustman.AbandonQuestEventName == nil then return false end
+	
+	--d("DUSTMAN: [OnRemoveQuest] isCompleted: " .. tostring(isCompleted) .. ", journalIndex: " .. tostring(journalIndex) .. ", questName: " .. tostring(questName) .. ", questID: " .. tostring(questID))
+    
+	if Dustman.GetSettings().bot==2 or Dustman.GetSettings().bot==3 then 
+		if questName==GetString(DUSTMAN_BOT_QUEST_NAME_1) or questName==GetString(DUSTMAN_BOT_QUEST_NAME_2) or questName==GetString(DUSTMAN_BOT_QUEST_NAME_3) or questName==GetString(DUSTMAN_BOT_QUEST_NAME_4) or questName==GetString(DUSTMAN_BOT_QUEST_NAME_5) or questName==GetString(DUSTMAN_BOT_QUEST_NAME_6) then
+			--d("DUSTMAN: Rescan triggered by onremovequest "..tostring(questName))
+			Dustman.Sweep()
+		end
+	end
 end
 
 local function OnLoad(eventCode, name)
@@ -1308,6 +1756,10 @@ local function OnLoad(eventCode, name)
 			markedAsJunk = Dustman_Junk_SavedVariables.Default[displayName][id]
 		end
 		
+		--rescan inv when bot quests are completed/removed
+		Dustman.AbandonQuestEventName = "AbandonBOTQuests"	
+		EVENT_MANAGER:RegisterForEvent(Dustman.AbandonQuestEventName, EVENT_QUEST_REMOVED, OnRemoveQuest)
+
 		--hook SetItemIsJunk to watch item marked as junk
 		local original_SetItemIsJunk = SetItemIsJunk
 		SetItemIsJunk = function(bagId, slotId, junk, ...)

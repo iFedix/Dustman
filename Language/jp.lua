@@ -1,12 +1,15 @@
---------------------------------------
--- English localization for Dustman --
---------------------------------------
+---------------------------------------
+-- Japanese localization for Dustman --
+---------------------------------------
 
---translated by k0ta0uchi (http://www.esoui.com/forums/member.php?u=25811) and iFedix
+---!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+---!!!!																															!!!!
+---!!!! Some translated lines here are changed with the respect of the english localization.									!!!!
+---!!!! If you want to translate Dustman for your language make sure to start from strings.lua and translate those strings.		!!!!
+---!!!! Some of them are already translated here so you can just copy them in your new localization file.						!!!!
+---!!!!																															!!!!
+---!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
- --addon menu
-SafeAddString(DUSTMAN_TITLE, "Dustman", 1)
 --equipment submenu
 SafeAddString(DUSTMAN_EQUIP_NOTRAIT, "特性を持たない装備品をマーク", 1)
 SafeAddString(DUSTMAN_EQUIP_NOTRAIT_DESC, "特性を持たない武器や防具をガラクタとしてマークするかを有効/無効化します。", 1)
@@ -30,10 +33,6 @@ SafeAddString(DUSTMAN_SET_ENABLED, "ダストマンがよろいをくずとし�
 SafeAddString(DUSTMAN_SET_DISABLED,	"ダストマンがセットしたよろいを保存する", 1)
 SafeAddString(DUSTMAN_RARE, "レアスタイルの装備品を除外", 1)
 SafeAddString(DUSTMAN_RARE_DESC, "有効化されている場合、レアスタイルを持つ武器や防具をガラクタとしてマークすることはありません。", 1)
-SafeAddString(DUSTMAN_MAELS_MAST,                   "Exclude Maelstrom's and Master's weapons", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_MAELS_MAST_DESC,              "If enabled, addon will never mark Maelstrom's and Master's weapons.", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_MAELSTROM,                    "MAELSTROM'S", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_MASTER,                       "MASTER'S", 1) --TO TRANSLATE
 SafeAddString(DUSTMAN_LEVEL, "指定レベル以上の装備品を除外：", 1)
 SafeAddString(DUSTMAN_LEVEL_DESC, "有効化されている場合、価格が0よりも高い、レベル（ベテランランク）が同等か、指定したレベルより高い武器や防具をガラクタとしてマークすることはありません。", 1)
 --jewels submenu
@@ -45,12 +44,6 @@ SafeAddString(DUSTMAN_JEWELS, "装備可能な宝飾品をマーク", 1)
 SafeAddString(DUSTMAN_JEWELS_DESC, "装備可能な宝飾品をガラクタとしてマークするかを有効/無効化します。", 1)
 SafeAddString(DUSTMAN_JEWELS_SET, "セット宝飾品を除外", 1)
 SafeAddString(DUSTMAN_JEWELS_SET_DESC, "有効化されている場合、セットボーナスを持つ宝飾品をガラクタとしてマークすることはありません。", 1)
-SafeAddString(DUSTMAN_JEWELS_INTRICATE,             "Exclude jewels with intricate trait", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_JEWELS_INTRICATE_DESC,        "If enabled, addon will never mark jewels with intricate trait as junk.", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_JEWELS_INTRIC_MAX,            "Only if needed to level up crafting skill",1) --TO TRANSLATE
-SafeAddString(DUSTMAN_JEWELS_INTRIC_MAX_DESC,       "If enabled, addon will exclude intricate jewels only if you need them to level up your crafting skill.", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_RESEARCH_JEWELS,              "Exclude jewels with researchable trait", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_RESEARCH_JEWELS_DESC,         "If enabled, addon will never mark jewels with researchable trait as junk.", 1) --TO TRANSLATE
 --provisioning submenu
 SafeAddString(DUSTMAN_INGR_ALL, "全ての調理用材料をマーク", 1)
 SafeAddString(DUSTMAN_INGR_ALL_DESC, "全ての調理用材料をガラクタとしてマークするかを有効/無効化します。", 1)
@@ -79,27 +72,8 @@ SafeAddString(DUSTMAN_POTIONS_DESC, "クラフト品ではないポーション�
 SafeAddString(DUSTMAN_LEVELPOTIONS, "指定レベル以上のポーションを除外：", 1)
 SafeAddString(DUSTMAN_LEVELPOTIONS_DESC, "有効化されている場合、同等のベテランランクか、指定したレベルより高い取得したポーションをマークすることはありません。", 1)
 --treasures and trophies submenu submenu
-SafeAddString(DUSTMAN_TREASURES,                    "Treasures and trophies", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_TREASURE,                     "Mark treasures", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_TREASURE_DESC,                "Enable/disable marking of treasures as junk.", 1) --TO TRANSLATE
 SafeAddString(DUSTMAN_TROPHIES, "収集したトロフィーをマーク", 1)
 SafeAddString(DUSTMAN_TROPHIES_DESC, "既に取得済みのトロフィーをマークするかを有効/無効化します。", 1)
---daily logins stuff
-SafeAddString(DUSTMAN_CROWN,                        "KRONEN", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DAILY_LOGINS,                 "Stuff from daily logins", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DAILY_LOGINS,                 "Stuff from daily logins", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_FOOD,                      "Food", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_FOOD_DESC,                 "Destroy food obtained by claiming daily logins", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_DRINKS,                    "Drinks", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_DRINKS_DESC,               "Destroy drinks obtained by claiming daily logins", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_POTIONS,                   "Potions", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_POTIONS_DESC,              "Destroy potions obtained by claiming daily logins", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_POISONS,                   "Poisons", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_POISONS_DESC,              "Destroy poisons obtained by claiming daily logins", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_REP_KITS,                  "Repair kits", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_REP_KITS_DESC,             "Destroy repair kits obtained by claiming daily logins", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_SOUL_GEMS,                 "Soul gems", 1) --TO TRANSLATE
-SafeAddString(DUSTMAN_DL_SOUL_GEMS_DESC,            "Destroy soul gems obtained by claiming daily logins", 1) --TO TRANSLATE
 --shared
 SafeAddString(DUSTMAN_QUALITY, "指定した品質以下の場合のみ:", 1)
 SafeAddString(DUSTMAN_QUALITY_DESC, "指定した品質以下のアイテムのみ選択を適用します。", 1)
