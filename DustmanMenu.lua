@@ -26,7 +26,7 @@ http://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
 if not Dustman then return end
 
-local ADDON_VERSION = "10.8"
+local ADDON_VERSION = "10.9"
 local ADDON_WEBSITE = "http://www.esoui.com/downloads/info97-Dustman.html"
 local ADDON_DONATIONS = "https://www.esoui.com/downloads/fileinfo.php?id=97#donate"
 
@@ -587,12 +587,23 @@ function Dustman.CreateSettingsMenu(defaults)
 				},
 				{
 					type = "checkbox",
-					name = GetString(DUSTMAN_SET_CYRO),
-					tooltip = GetString(DUSTMAN_SET_CYRO_DESC_WA),
-					getFunc = function() return GetSettings().equipment.wa.keepCyro end,
-					setFunc = function(state) GetSettings().equipment.wa.keepCyro = state end,
+					name = GetString(DUSTMAN_SET_CYRO_A),
+					tooltip = GetString(DUSTMAN_SET_CYRO_DESC_A),
+					getFunc = function() return GetSettings().equipment.wa.keepCyroA end,
+					setFunc = function(state) GetSettings().equipment.wa.keepCyroA = state end,
+					width = "half",
 					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
-					default = defaults.equipment.wa.keepCyro,
+					default = defaults.equipment.wa.keepCyroA,
+				},
+				{
+					type = "checkbox",
+					name = GetString(DUSTMAN_SET_CYRO_W),
+					tooltip = GetString(DUSTMAN_SET_CYRO_DESC_W),
+					getFunc = function() return GetSettings().equipment.wa.keepCyroW end,
+					setFunc = function(state) GetSettings().equipment.wa.keepCyroW = state end,
+					width = "half",
+					disabled = function() return not GetSettings().equipment.wa.enabled or GetSettings().equipment.wa.keepSetItems end,
+					default = defaults.equipment.wa.keepCyroW,
 				},
 				{
 					type = "checkbox",
@@ -847,7 +858,7 @@ function Dustman.CreateSettingsMenu(defaults)
 				},
 				{
 					type = "checkbox",
-					name = GetString(DUSTMAN_SET_CYRO),
+					name = GetString(DUSTMAN_SET_CYRO_J),
 					tooltip = GetString(DUSTMAN_SET_CYRO_DESC_J),
 					getFunc = function() return GetSettings().equipment.j.keepCyro end,
 					setFunc = function(state) GetSettings().equipment.j.keepCyro = state end,

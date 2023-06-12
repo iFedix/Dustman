@@ -78,7 +78,8 @@ local defaults = {
 			
 			keepBG = true,
 			keepCrafted = true,
-			keepCyro = true,
+			keepCyroA = true,
+			keepCyroW = true,
 			keepDungeon = true,
 			keepIC = true,
 			keepOverland = true,
@@ -1252,7 +1253,7 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 			
 			--specific set types check
 			if LS.checkIfSetsAreLoadedProperly() and isSet then
-
+			
 				--Arena Weapons (NOTE: we consider only the weapons dropping from the last chest in the arenas)
 				if Dustman.GetSettings().equipment.wa.keepArenaWeapons and LS.IsArenaSet(setId) and setId ~= 23 and setId ~= 24 and setId ~= 32 and setId ~= 88
 				and setId ~= 211 and setId ~= 212 and setId ~= 213 and setId ~= 214 and setId ~= 215 and setId ~= 216 and setId ~= 217
@@ -1266,7 +1267,8 @@ local function OnInventorySingleSlotUpdate(_, bagId, slotId, isNewItem)
 				if Dustman.GetSettings().equipment.wa.keepCrafted and LS.IsCraftedSet(setId) then return end
 				
 				--Cyrodill sets
-				if Dustman.GetSettings().equipment.wa.keepCyro and LS.IsCyrodiilSet(setId) then return end
+				if Dustman.GetSettings().equipment.wa.keepCyroA and itemType == ITEMTYPE_ARMOR and LS.IsCyrodiilSet(setId) then return end
+				if Dustman.GetSettings().equipment.wa.keepCyroW and itemType == ITEMTYPE_WEAPON and LS.IsCyrodiilSet(setId) then return end
 				
 				--Daily random dungeon or Imperial city reward sets
 				if Dustman.GetSettings().equipment.wa.keepDRandIC and LS.IsDailyRandomDungeonAndImperialCityRewardSet(setId) then return end
