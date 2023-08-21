@@ -48,8 +48,6 @@ local markedAsJunk = {}
 local globalMarkedAsJunk = {}
 local requestedScan
 
-local TUTORIAL_ACHIEVEMENT = 993
-local inventorySingleSlotUpdate
 
 local defaults = {
 	worldname = GetWorldName(),
@@ -1564,36 +1562,11 @@ function Dustman.ClearMarkedAsJunk()
 	end
 end
 
-local function RegisterInventorySingleSlotUpdate()
+local function OnPlayerActivated()
 	EVENT_MANAGER:RegisterForEvent(ADDON_NAME, EVENT_INVENTORY_SINGLE_SLOT_UPDATE, OnInventorySingleSlotUpdate)
 	EVENT_MANAGER:AddFilterForEvent(ADDON_NAME, EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_BAG_ID, BAG_BACKPACK)
 	EVENT_MANAGER:AddFilterForEvent(ADDON_NAME, EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_INVENTORY_UPDATE_REASON, INVENTORY_UPDATE_REASON_DEFAULT)
-	inventorySingleSlotUpdate = true
-end
-
-local function UnregisterRegisterInventorySingleSlotUpdate()
-	EVENT_MANAGER:UnregisterForEvent(ADDON_NAME, EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
-	inventorySingleSlotUpdate = false
-end
-
-local function IsTutorialDone()
-	local _, _, _, _, completed = GetAchievementInfo(TUTORIAL_ACHIEVEMENT)
-	return completed
-end
-
-local function OnPlayerActivated()
-	if inventorySingleSlotUpdate then
-		if IsInTutorialZone() then
-			UnregisterRegisterInventorySingleSlotUpdate()
-		end
-	else
-		if IsTutorialDone() then
-			RegisterInventorySingleSlotUpdate()
-			EVENT_MANAGER:UnregisterForEvent(ADDON_NAME, EVENT_PLAYER_ACTIVATED)
-		elseif not IsInTutorialZone() then
-			RegisterInventorySingleSlotUpdate()
-		end
-	end
+	EVENT_MANAGER:UnregisterForEvent(ADDON_NAME, EVENT_PLAYER_ACTIVATED)
 end
 
 local function OnSlotMouseEnter(inventorySlot)
@@ -1747,10 +1720,10 @@ local function OnLoad(eventCode, name)
 	if name == ADDON_NAME then
 	
 		--initialize saved variables
-		Dustman.savedVars = 		ZO_SavedVars:NewCharacterIdSettings(	"Dustman_SavedVariables", 2, nil, defaults)
-		Dustman.globalSavedVars  = 	ZO_SavedVars:NewAccountWide(			"Dustman_GlobalSavedVariables",  2, nil,  defaults)
-		markedAsJunk = ZO_SavedVars:NewCharacterIdSettings(								"Dustman_Junk_SavedVariables", 2)
-		globalMarkedAsJunk = ZO_SavedVars:NewAccountWide(										"Dustman_Junk_GlobalSavedVariables", 2)
+		Dustman.savedVars = ZO_SavedVars:NewCharacterIdSettings("Dustman_SavedVariables", 2, nil, defaults)
+		Dustman.globalSavedVars = ZO_SavedVars:NewAccountWide("Dustman_GlobalSavedVariables", 2, nil, defaults)
+		markedAsJunk = ZO_SavedVars:NewCharacterIdSettings("Dustman_Junk_SavedVariables", 2)
+		globalMarkedAsJunk = ZO_SavedVars:NewAccountWide("Dustman_Junk_GlobalSavedVariables", 2)
 		
 		if not Dustman.savedVars.useGlobalSettings then
 			local displayName = GetDisplayName()
@@ -1836,9 +1809,7 @@ local function OnLoad(eventCode, name)
 		EVENT_MANAGER:RegisterForEvent(ADDON_NAME, EVENT_OPEN_STORE, OnOpenStore)
 		EVENT_MANAGER:RegisterForEvent(ADDON_NAME, EVENT_OPEN_FENCE, OnOpenFence)
 		EVENT_MANAGER:RegisterForEvent(ADDON_NAME, EVENT_RECIPE_LEARNED, OnRecipeLearned)
-		
 		EVENT_MANAGER:RegisterForEvent(ADDON_NAME, EVENT_PLAYER_ACTIVATED, OnPlayerActivated)
-		
 		EVENT_MANAGER:UnregisterForEvent(ADDON_NAME, EVENT_ADD_ON_LOADED)
 				
 	end

@@ -26,7 +26,7 @@ http://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
 if not Dustman then return end
 
-local ADDON_VERSION = "10.9"
+local ADDON_VERSION = "10.9.1"
 local ADDON_WEBSITE = "http://www.esoui.com/downloads/info97-Dustman.html"
 local ADDON_DONATIONS = "https://www.esoui.com/downloads/fileinfo.php?id=97#donate"
 
